@@ -1,10 +1,8 @@
 export const Urls = {
-  LOGIN: '/auth/login',
-  LOGOUT: '/auth/logout',
-  DASHBOARD: '/dashboard',
-  PAYMENTS_NEW: '/payments/new',
-  PAYMENTS_LIST: '/payments',
-  ORDERS: '/orders',
-  REPORTS: '/reports',
+  HOME: '/home',
+  CHECKOUT: '/checkout',
+  PAYMENT_SUCCESS: '/payment-success',
+  ORDER_HISTORY: '/order-history',
+  APPOINTMENT: '/appointment',
   SETTINGS: '/settings',
 } as const;

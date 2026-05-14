@@ -1,4 +1,4 @@
 export * from './BasePage';
-export * from './auth/LoginPage';
-export * from './dashboard/DashboardPage';
-export * from './payment/PaymentPage';
+export * from './pos/HomePage';
+export * from './pos/CheckoutPage';
+export * from './pos/PaymentSuccessPage';

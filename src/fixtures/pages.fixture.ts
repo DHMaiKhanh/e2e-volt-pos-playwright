@@ -1,22 +1,27 @@
 import { test as base } from '@playwright/test';
-import { LoginPage } from '@pages/auth/LoginPage';
-import { DashboardPage } from '@pages/dashboard/DashboardPage';
-import { PaymentPage } from '@pages/payment/PaymentPage';
+import { HomePage } from '@pages/pos/HomePage';
+import { CheckoutPage } from '@pages/pos/CheckoutPage';
+import { PaymentSuccessPage } from '@pages/pos/PaymentSuccessPage';
+import { PasscodeDialog } from '@components/modal/PasscodeDialog';
 
 export interface PagesFixture {
-  loginPage: LoginPage;
-  dashboardPage: DashboardPage;
-  paymentPage: PaymentPage;
+  homePage: HomePage;
+  checkoutPage: CheckoutPage;
+  paymentSuccessPage: PaymentSuccessPage;
+  passcodeDialog: PasscodeDialog;
 }
 
 export const pagesFixture = base.extend<PagesFixture>({
-  loginPage: async ({ page }, use) => {
-    await use(new LoginPage(page));
+  homePage: async ({ page }, use) => {
+    await use(new HomePage(page));
   },
-  dashboardPage: async ({ page }, use) => {
-    await use(new DashboardPage(page));
+  checkoutPage: async ({ page }, use) => {
+    await use(new CheckoutPage(page));
   },
-  paymentPage: async ({ page }, use) => {
-    await use(new PaymentPage(page));
+  paymentSuccessPage: async ({ page }, use) => {
+    await use(new PaymentSuccessPage(page));
+  },
+  passcodeDialog: async ({ page }, use) => {
+    await use(new PasscodeDialog(page));
   },
 });

@@ -9,7 +9,7 @@ import { Logger } from '@utils/logger';
 export abstract class BasePage {
   protected readonly logger = Logger.child({ module: this.constructor.name });
 
-  constructor(protected readonly page: Page) {}
+  constructor(public readonly page: Page) {}
 
   /** Subclasses must declare the URL path. baseURL is set in playwright.config. */
   protected abstract readonly path: string;

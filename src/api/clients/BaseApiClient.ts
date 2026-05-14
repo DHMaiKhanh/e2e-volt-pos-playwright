@@ -29,7 +29,7 @@ export class BaseApiClient {
   protected readonly logger = Logger.child({ module: 'api' });
 
   constructor(options: ApiClientOptions = {}) {
-    this.baseURL = options.baseURL ?? `${env.API_BASE_URL}/${env.API_VERSION}`;
+    this.baseURL = options.baseURL ?? env.BASE_URL;
     this.timeout = options.timeout ?? env.API_TIMEOUT;
     this.defaultHeaders = {
       Accept: 'application/json',

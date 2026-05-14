@@ -1,5 +1,4 @@
 import { defineConfig, devices } from '@playwright/test';
-import * as path from 'path';
 import { loadEnv } from './configs/env/loadEnv';
 
 const env = loadEnv();
@@ -18,10 +17,14 @@ export default defineConfig({
     toMatchSnapshot: { maxDiffPixelRatio: 0.02 },
   },
 
-  fullyParallel: true,
+  // Volt POS shares global state between orders (active order on home page),
+  // so we run serially. Inside-file parallelism is enforced via
+  // `test.describe.configure({ mode: 'serial' })` where it matters.
+  fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isCI ? 4 : undefined,
+  workers: 1,
+
   reporter: [
     ['list'],
     ['html', { outputFolder: 'reports/html', open: 'never' }],
@@ -33,18 +36,15 @@ export default defineConfig({
   use: {
     baseURL: env.BASE_URL,
     headless: env.HEADLESS,
-    viewport: { width: 1440, height: 900 },
+    viewport: { width: 1920, height: 1080 },
     ignoreHTTPSErrors: true,
-    actionTimeout: 15 * 1000,
-    navigationTimeout: 30 * 1000,
+    actionTimeout: 10_000,
+    navigationTimeout: 15_000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     locale: 'en-US',
     timezoneId: 'Asia/Ho_Chi_Minh',
-    extraHTTPHeaders: {
-      'X-Test-Run': 'playwright-e2e',
-    },
     launchOptions: {
       slowMo: env.SLOW_MO,
     },
@@ -52,51 +52,16 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'setup',
-      testMatch: /global\.setup\.ts/,
-    },
-    {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'mobile-chrome',
-      use: { ...devices['Pixel 7'] },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'mobile-safari',
-      use: { ...devices['iPhone 14'] },
-      dependencies: ['setup'],
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
     },
     {
       name: 'api',
       testDir: './tests/api',
-      use: {
-        baseURL: env.API_BASE_URL,
-      },
+      use: { baseURL: env.BASE_URL },
     },
-    {
-      name: 'visual',
-      testDir: './tests/visual',
-      use: { ...devices['Desktop Chrome'] },
-      dependencies: ['setup'],
-    },
+    // Uncomment when cross-browser coverage is needed.
+    // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    // { name: 'webkit',  use: { ...devices['Desktop Safari'] } },
   ],
-
-  globalSetup: path.resolve(__dirname, './src/fixtures/global.setup.ts'),
-  globalTeardown: path.resolve(__dirname, './src/fixtures/global.teardown.ts'),
-
-  webServer: undefined,
 });
