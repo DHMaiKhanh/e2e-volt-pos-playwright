@@ -3,6 +3,8 @@ import { HomePage } from '@pages/pos/HomePage';
 import { CheckoutPage } from '@pages/pos/CheckoutPage';
 import { OtherPaymentPage } from '@pages/pos/OtherPaymentPage';
 import { PaymentSuccessPage } from '@pages/pos/PaymentSuccessPage';
+import { DailySaleReportPage } from '@pages/pos/DailySaleReportPage';
+import { OrderHistoryPage } from '@pages/pos/OrderHistoryPage';
 import { PasscodeDialog } from '@components/modal/PasscodeDialog';
 
 export interface PagesFixture {
@@ -10,6 +12,8 @@ export interface PagesFixture {
   checkoutPage: CheckoutPage;
   otherPaymentPage: OtherPaymentPage;
   paymentSuccessPage: PaymentSuccessPage;
+  dailySaleReportPage: DailySaleReportPage;
+  orderHistoryPage: OrderHistoryPage;
   passcodeDialog: PasscodeDialog;
 }
 
@@ -25,6 +29,12 @@ export const pagesFixture = base.extend<PagesFixture>({
   },
   paymentSuccessPage: async ({ page }, use) => {
     await use(new PaymentSuccessPage(page));
+  },
+  dailySaleReportPage: async ({ page }, use) => {
+    await use(new DailySaleReportPage(page));
+  },
+  orderHistoryPage: async ({ page }, use) => {
+    await use(new OrderHistoryPage(page));
   },
   passcodeDialog: async ({ page }, use) => {
     await use(new PasscodeDialog(page));
