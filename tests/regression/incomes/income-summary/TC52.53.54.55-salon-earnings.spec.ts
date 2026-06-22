@@ -4,12 +4,20 @@ import { valueAfterLabel } from '@utils/incomeSummaryDetail';
 import { openRecentDetail } from './incomeSummary.helpers';
 
 /**
- * Income Summary — Salon Earnings (VP-1048 TC-52…55).
+ * Income Summary — Salon Earnings (VP-1048 TC-52…55, 71…73).
  *
  * Anchors on the most recent settled past day. Verifies the UI renders the API
  * values and the section formulas hold (allowing negatives — QC#13):
- *   Net Earnings  = Salon Commission + Product Sale − Product Refund − Total Discount
- *   Total Earnings = Net Earnings + Staff Supply Share + Clean Up Fee − Staff Salary
+ *   Net Earnings   = Salon Commission + Product Sale − Product Refund − Total Discount
+ *   Total Earnings = Net + Staff Supply Share + Clean Up Fee − Staff Salary
+ *                    + staffPayoutCardFeeCharge (card fee recouped from staff)
+ *
+ * The backend implemented the doc's "Card Charge Commission + Tip" as a single
+ * `staffPayoutCardFeeCharge` field that the salon recoups, so TC-54 verifies the
+ * full Total Earning formula (exact against the API). The doc's separate "Staff
+ * Discount Charge" line is still not a field → `fixme` (TC-71). Per-line UI
+ * display of the card charge lands in `fixme` too (TC-72/73).
+ *
  * The Salon total and the Staff Payout total are computed independently — never
  * forced to match (TC-55).
  */
@@ -58,16 +66,35 @@ test.describe(`Income Summary — Salon Earnings (real data) ${Tag.REGRESSION}`,
 
     expect(v(se, 'Total Earnings')).toBe(row.salonEarningsTotal);
 
-    // TC-54: Total Earnings = Net + Staff Supply Share + Clean Up − Staff Salary
-    expect(v(se, 'Total Earnings'), 'Total Earnings formula').toBe(
-      v(se, 'Net Earnings') +
-        v(se, 'Staff Supply Share') +
-        v(se, 'Clean Up Fee') -
-        v(se, 'Staff Salary'),
+    // TC-54 (doc ID 54): Total Earning = Net + Staff Supply Share + Clean Up Fee
+    // − Staff Salary + staffPayoutCardFeeCharge (the card fee the salon recoups
+    // from staff — doc's "Card Charge Commission + Tip"). Asserted at the API
+    // level (exact across settled days; the per-staff rounding that breaks the
+    // Staff Payout total does not affect these salon-level aggregates).
+    const cardFeeCharge = await incomeSummaryService.getStaffCardFeeCharge(d.date);
+    expect(row.salonEarningsTotal, 'Total Earning formula (API)').toBe(
+      row.salonEarningsNet +
+        row.salonEarningsStaffSupplyShare +
+        row.salonEarningsCleanUpFee -
+        row.salonEarningsStaffSalary +
+        cardFeeCharge,
     );
 
     // TC-55: Salon total and Staff total are each their own number (not coerced equal).
     expect(row.salonEarningsTotal, 'Salon total computed independently').not.toBeNaN();
     expect(row.staffPayoutTotal, 'Staff total computed independently').not.toBeNaN();
   });
+
+  // TC-71: Staff Discount Charge (promotion the staff shares back to the owner)
+  // is in the doc but has NO GraphQL field yet → pending backend + a dataset
+  // with promotion-split (doc ⚠️ #3).
+  test.fixme('TC-71: Salon Earnings shows Staff Discount Charge, added into Total Earning (pending API field + data)', () => {});
+
+  // TC-72/73: the doc's two card-charge lines (Commission / Tip) are combined
+  // server-side into the single `staffPayoutCardFeeCharge` — its effect on Total
+  // Earning is already covered by TC-54. These two `fixme`s track the per-line
+  // UI display (label split) only, which needs a card-fee-setting dataset.
+  test.fixme('TC-72: Salon Earnings shows Staff Card Charge − Commission as its own line (combined into staffPayoutCardFeeCharge; needs data)', () => {});
+
+  test.fixme('TC-73: Salon Earnings shows Staff Card Charge − Tip as its own line (combined into staffPayoutCardFeeCharge; needs data)', () => {});
 });
