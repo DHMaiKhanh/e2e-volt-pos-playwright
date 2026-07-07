@@ -1,75 +1,135 @@
 ---
-title: Home (/home) — Chức năng quét Tiếng Việt (i18n scan)
-source-linear: "offline: docs/linear/main-flow-onboard.md (Linear MCP chưa xác thực trong phiên này)"
+title: Home (/home) — Tài liệu hợp nhất (tính năng + test case + quét Tiếng Việt)
+route: /home
+source-linear: 'offline: docs/linear/main-flow-onboard.md'
 scanned-at: 2026-07-06
-scanned-by: playwright (TC-i18n-home-vietnamese-scan) trên app live http://localhost:1420
-skill: linear-feature-spec (1/4)
+scanned-by: playwright (TC-i18n-home-vietnamese-scan + TC-i18n-screen-compare) trên app live localhost:1420
+consolidates: feature-spec (skill 1) + test cases (skill 2) + i18n coverage + i18n meaning (skill 5)
+excludes: docs/codegen-flow/home-flow.md · docs/codegen-detail/home-detail.md (giữ riêng theo yêu cầu)
 ---
 
-# Home (`/home`) — Đặc tả chức năng quét Tiếng Việt
+# Home (`/home`) — Tài liệu hợp nhất
 
-> File này là đầu ra **Skill 1/4** (`linear-feature-spec`) cho màn hình **Home**, tập trung
-> vào **chức năng quét tiếng Việt** (i18n coverage scan). Nguồn: spec offline Linear +
-> **quét màn hình thật** bằng Playwright trên app đang chạy (2026-07-06).
+> **MỘT file duy nhất** cho màn Home: gộp **đặc tả tính năng** + **test case** + **kết quả quét
+> Tiếng Việt** — cả _"quét tiếng Việt"_ (còn tiếng Anh không) lẫn _"quét nghĩa"_ (dịch đúng
+> chuẩn chưa). Kết quả trực quan: **1 file** `reports/home/home.html`.
+> Luồng code-gen được giữ **tách riêng**: [codegen-flow/home-flow.md](../codegen-flow/home-flow.md) ·
+> [codegen-detail/home-detail.md](../codegen-detail/home-detail.md).
 
-## 1. Mục tiêu & phạm vi
+---
 
-Chuyển app sang **Tiếng Việt**, đi hết các bề mặt (surface) của màn Home, và liệt kê **chính
-xác chỗ nào còn hiển thị chữ tiếng Anh**. Phạm vi Home gồm: trang `/home`, các popup **không
-cần đơn**, các dialog **cần đơn** (Ghi chú / Khuyến mãi / Gộp đơn / Đổi nhân viên / toast In),
+# PHẦN A — Đặc tả tính năng
+
+## A1. Mục tiêu & phạm vi
+
+Chuyển app sang **Tiếng Việt**, đi hết các bề mặt (surface) của màn Home và liệt kê **chính xác
+chỗ nào còn tiếng Anh** + **dịch đã đúng chuẩn chưa**. Phạm vi Home: trang `/home`, các popup
+**không cần đơn**, các dialog **cần đơn** (Ghi chú / Khuyến mãi / Gộp đơn / Đổi nhân viên / toast In),
 và 3 **panel header** (Thông báo 🔔 / Chấm công / Thiết bị).
 
-## 2. Các luồng chính (từ spec)
+## A2. Các luồng chính
 
 - Đổi ngôn ngữ **một lần** qua UI (`/settings/language` → "Tiếng Việt").
-- App **không lưu ngôn ngữ qua reload** (bug đã biết) → điều hướng **client-side** bằng
-  TanStack Router, **không** `page.goto` giữa chừng.
+- App **không lưu ngôn ngữ qua reload** (bug đã biết) → điều hướng **client-side** bằng TanStack
+  Router (`window.__TSR_ROUTER__.navigate`), **không** `page.goto` giữa chừng.
 - Tạo **một đơn** (chọn nhân viên đầu + 1 dịch vụ) để mở nhóm dialog phụ thuộc đơn.
 
-## 3. Thành phần UI thực tế (quét bằng Playwright, 2026-07-06)
+## A3. Thành phần UI thực tế (quét Playwright)
 
-Quét **10 surface**, **2 surface còn tiếng Anh**, **12 chuỗi** cần dịch.
+| Surface                                                        | Vai trò                                                         | Trạng thái VN    | Ghi chú                                                           |
+| -------------------------------------------------------------- | --------------------------------------------------------------- | ---------------- | ----------------------------------------------------------------- |
+| `/home` (trang chính)                                          | Header, sidebar đơn chờ, cột Staff/Khách/Dịch vụ, Order summary | ⚠️ **CÒN EN**    | `Quick Pay`, `Gift Card`, `Additional Services`, `Basic Services` |
+| Popup **Bán thẻ quà tặng**                                     | Mở không cần đơn                                                | ✅ VN            |                                                                   |
+| Popup **Chọn nhân viên trước** (Quick Pay khi chưa chọn staff) | Cảnh báo                                                        | ✅ VN            |                                                                   |
+| Popup **Tìm kiếm toàn cục** (Ctrl+K)                           | Search                                                          | ✅ VN            | 4 tab All/Appointment/Customer/Order cần kiểm lại                 |
+| Popup **Quét mã** (Scanner)                                    | Camera                                                          | ✅ VN            | thường không mở trong CI                                          |
+| Dialog **Ghi chú đơn**                                         | Cần đơn                                                         | ✅ VN            |                                                                   |
+| Dialog **Khuyến mãi & Thưởng**                                 | Cần đơn                                                         | ⚠️ **sai chuẩn** | hiển thị "Khuyến mãi & Phần thưởng"                               |
+| Dialog **Gộp đơn**                                             | Cần đơn                                                         | ✅ VN            | rò giá trị fallback `Unknown`                                     |
+| Panel **Chấm công**                                            | Header                                                          | ✅ VN            |                                                                   |
+| Panel **Thông báo** (🔔)                                       | Header                                                          | ⚠️ **CÒN EN**    | dòng `"<Tên> appointment on <ngày> has been confirmed."`          |
 
-| Surface | Vai trò | Trạng thái VN | Ghi chú |
-|---------|---------|---------------|---------|
-| `/home` (trang chính) | Header, sidebar đơn chờ, cột Staff/Khách/Dịch vụ, Order summary | ⚠️ **CÒN EN** | Rò rỉ `Quick Pay`, `Gift Card` |
-| Popup **Bán thẻ quà tặng** (Gift Card) | Mở không cần đơn | ✅ VN | |
-| Popup **Chọn nhân viên trước** (Quick Pay khi chưa chọn staff) | Cảnh báo | ✅ VN | |
-| Popup **Tìm kiếm toàn cục** (Ctrl+K) | Search | ✅ VN | |
-| Popup **Quét mã** (Scanner) | Camera | ✅ VN | thường không mở trong CI |
-| Dialog **Ghi chú đơn** (Order Note) | Cần đơn | ✅ VN | |
-| Dialog **Khuyến mãi & Thưởng** (Promo & Rewards) | Cần đơn | ✅ VN | |
-| Dialog **Gộp đơn** (Merge Order) | Cần đơn | ✅ VN | |
-| Panel **Chấm công** (Time Keeping) | Header | ✅ VN | |
-| Panel **Thông báo** (chuông 🔔) | Header | ⚠️ **CÒN EN** | 10 dòng `... appointment on <date> has been confirmed.` |
+---
 
-### Chuỗi cần dịch (dedup 12)
-1. `Quick Pay` · `Gift Card` — nút trên `/home`.
-2. 10 dòng thông báo lịch hẹn dạng `"<Tên> appointment on <ngày giờ> has been confirmed."`
-   (nội dung động trong panel chuông 🔔).
+# PHẦN B — Quét Tiếng Việt (i18n)
 
-## 4. Nghiệp vụ & ràng buộc
+> Quét **1 lần EN + 1 lần VI**, ghép theo đường dẫn DOM, đối chiếu **glossary POS**
+> ([`src/utils/i18nCompare.ts`](../../src/utils/i18nCompare.ts)). Dữ liệu (tên dịch vụ/nhân
+> viên/đơn) đã lọc bỏ khỏi cổng lỗi.
 
-- **Cổng localization:** mỗi surface còn tiếng Anh là một fail (soft). `I18N_LENIENT=1` → chỉ báo cáo.
-- Timeout test: 180s. Passcode owner mặc định `8888` (auto khi bị hỏi).
-- Đầu ra scan: `reports/i18n-audit/home-scan.{html,json}` + ảnh `home-screens/*.png` (chỉ surface FAIL).
+## B0. Tổng quan (2026-07-06)
 
-## 5. Trạng thái / quyền / edge case
+> ❌ chưa dịch (nhãn UI thật) **4** · ⚠️ sai chuẩn **1** · ✅ thuật ngữ đúng **59** · 📐 UI vỡ thật **0**
+> (compare thô: missing 14 gồm 10 chuỗi là **data mẫu** — xem B1b.)
 
-- Popup Scanner cần quyền camera → thường skip trong CI (best-effort, không fail).
-- Nhóm dialog phụ thuộc đơn bị **skip an toàn** nếu không có staff/service để tạo đơn.
-- Panel header: nút icon **không có accessible name** → click theo vị trí (hàng trên, phải→trái).
+## B1. ❌ Còn tiếng Anh — NHÃN UI THẬT (quét tiếng Việt)
 
-## 6. Đối chiếu spec ↔ UI thực tế
+| Chuỗi (EN)            | Đang hiển thị                                   | Nên dịch             | Ghi chú                                                                              |
+| --------------------- | ----------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------ |
+| `Quick Pay`           | Quick Pay                                       | **Thanh toán nhanh** | Nút cột dịch vụ, chưa `t()`. "Quick Checkout" cạnh đó đã dịch đúng.                  |
+| `Gift Card`           | Gift Card                                       | **Thẻ quà tặng**     | Nút mở dialog Bán thẻ quà tặng.                                                      |
+| `Additional Services` | Additional Services                             | **Dịch vụ bổ sung**  | Nhãn nhóm dịch vụ.                                                                   |
+| `Basic Services`      | Basic Services                                  | **Dịch vụ cơ bản**   | Nhãn nhóm dịch vụ.                                                                   |
+| `Unknown`             | Unknown                                         | _(fallback)_         | Giá trị fallback thẻ Gộp đơn → xử lý tầng dữ liệu ("Không rõ"), không phải key i18n. |
+| Panel 🔔              | `... appointment on <ngày> has been confirmed.` | (cần dịch)           | Thông báo lịch hẹn hardcode EN — deep-scan bắt.                                      |
 
-- **Khớp:** cấu trúc Home & danh mục popup trùng với `docs/i18n/home-translation-map.md`.
-- **Lệch (lỗi dịch thật):** `Quick Pay`, `Gift Card` chưa qua `t()`; thông báo lịch hẹn
-  hardcode tiếng Anh → cần đưa vào i18n.
+### B1b. Data mẫu leak (KHÔNG phải lỗi dịch — bỏ qua)
 
-## 7. Nguồn tham chiếu
+`Gift Card [****-****-2060]`, `pedicure today`, `Test today`, `Product 2`, `Category 2`,
+`APITest Service …`, `APITest Product …`, `Spa Service`, `service 1` — là **tên dịch
+vụ/sản phẩm/danh mục mẫu** (merchant data), không đưa vào cổng lỗi.
 
-- Spec quét: [docs/i18n/home-translation-map.md](../i18n/home-translation-map.md) ·
-  [docs/i18n/vietnamese-scan-flow.md](../i18n/vietnamese-scan-flow.md)
-- Test: [tests/regression/i18n/TC-i18n-home-vietnamese-scan.spec.ts](../../tests/regression/i18n/TC-i18n-home-vietnamese-scan.spec.ts)
-- Helper: [src/utils/i18nHome.ts](../../src/utils/i18nHome.ts) · [src/utils/i18nScan.ts](../../src/utils/i18nScan.ts)
-- Báo cáo scan: `reports/i18n-audit/home-scan.html`
+## B2. ⚠️ Dịch chưa đúng chuẩn (quét nghĩa)
+
+| Hiện tại (VI)            | Gốc (EN)          | Nên dùng (chuẩn)        | Vì sao                                                    |
+| ------------------------ | ----------------- | ----------------------- | --------------------------------------------------------- |
+| Khuyến mãi & Phần thưởng | `Promo & Rewards` | **Khuyến mãi & Thưởng** | Glossary chuẩn hoá "Rewards"→"Thưởng" cho gọn, nhất quán. |
+
+## B3. ✅ Đã dịch đúng chuẩn (mẫu)
+
+| EN             | VI               |
+| -------------- | ---------------- |
+| Pending Orders | Đơn đang chờ     |
+| Order History  | Lịch sử đơn hàng |
+| Appointment    | Lịch hẹn         |
+| Scanner        | Quét mã          |
+| Quick Checkout | Thanh toán nhanh |
+| Done           | Hoàn tất         |
+| Show           | Hiện             |
+
+## B4. 📐 Vỡ giao diện (chỉ báo cáo)
+
+- Tràn ngang toàn màn: `0px` → không vỡ.
+- Cắt chữ (ellipsis): chỉ ở **tên dịch vụ / mã đơn** (`OD260707-…`, tên khách) — cắt có chủ đích, không phải lỗi layout.
+
+---
+
+# PHẦN C — Test cases
+
+> Mỗi TC map 1-1 sang code trong spec Home. Code đã tồn tại — thêm TC mới thì thêm `test()`
+> theo convention `@fixtures/index` + `Tag`.
+
+| ID            | Tiêu đề                             | Tiền điều kiện      | Kết quả mong đợi                         | Code                               |
+| ------------- | ----------------------------------- | ------------------- | ---------------------------------------- | ---------------------------------- |
+| TC-HOME-VI-01 | Đổi ngôn ngữ sang Tiếng Việt qua UI | Đã đăng nhập        | Sidebar "Đơn đang chờ" (VN)              | `switchToVietnamese()`             |
+| TC-HOME-VI-02 | Router client-side khả dụng         | Đã đổi VN           | `window.__TSR_ROUTER__` là object        | `expect(hasRouter).toBe(true)`     |
+| TC-HOME-VI-03 | Quét `/home` còn chuỗi EN           | VN + router         | Liệt kê chuỗi EN (Quick Pay, Gift Card…) | `scanRoute + record`               |
+| TC-HOME-VI-04 | Quét popup Bán thẻ quà tặng         | VN, không cần đơn   | Popup VN                                 | `HOME_POPUP_DEFS[0]`               |
+| TC-HOME-VI-05 | Cảnh báo "Chọn nhân viên trước"     | VN, chưa chọn staff | Dialog cảnh báo VN                       | `HOME_POPUP_DEFS[1]`               |
+| TC-HOME-VI-06 | Tìm kiếm toàn cục (Ctrl+K)          | VN                  | Dialog search VN                         | `HOME_POPUP_DEFS[2]`               |
+| TC-HOME-VI-07 | Scanner (best-effort)               | VN, có camera       | VN (skip nếu không camera)               | `HOME_POPUP_DEFS[3]`               |
+| TC-HOME-VI-08 | Dialog phụ thuộc đơn                | VN, tạo được đơn    | Ghi chú/Khuyến mãi/Gộp đơn VN            | `scanHomeOrderDialogs()`           |
+| TC-HOME-VI-09 | Dialog Đổi nhân viên                | VN, đơn có staff    | Dialog xác nhận VN                       | `scanHomeOrderDialogs §3b`         |
+| TC-HOME-VI-10 | Toast nút In                        | VN, đơn có dịch vụ  | Toast VN                                 | `scanHomeOrderDialogs §4`          |
+| TC-HOME-VI-11 | 3 panel header                      | VN                  | Panel VN (🔔 còn EN)                     | `scanHeaderPanels()`               |
+| TC-HOME-VI-12 | Sinh báo cáo                        | Đã quét             | File scan tồn tại                        | `renderI18nReport + writeFileSync` |
+| TC-HOME-VI-13 | Cổng localization (soft gate)       | `I18N_LENIENT≠1`    | Fail nếu còn EN; lenient → info          | vòng `expect.soft` cuối spec       |
+
+---
+
+## Nguồn tham chiếu
+
+- **Spec quét / glossary màn Home:** [docs/i18n/home-translation-map.md](../i18n/home-translation-map.md) (giữ riêng — hạ tầng scanner dùng chung).
+- **Luồng code-gen (tách riêng):** [codegen-flow/home-flow.md](../codegen-flow/home-flow.md) · [codegen-detail/home-detail.md](../codegen-detail/home-detail.md).
+- **Test / helper:** [TC-i18n-home-vietnamese-scan.spec.ts](../../tests/regression/i18n/TC-i18n-home-vietnamese-scan.spec.ts) · [i18nHome.ts](../../src/utils/i18nHome.ts) · [i18nScan.ts](../../src/utils/i18nScan.ts) · [i18nCompare.ts](../../src/utils/i18nCompare.ts)
+- **Dữ liệu quét thô:** `reports/home/compare.json` (meaning) · `reports/home/home-scan.json` (coverage/suite).

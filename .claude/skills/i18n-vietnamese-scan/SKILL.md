@@ -25,19 +25,20 @@ Mục tiêu: với **một màn hình**, trả lời 3 câu hỏi và ghi kết 
   của user. Khoá hợp lệ khai trong `SCREENS` tại [`src/utils/i18nCompare.ts`](../../../src/utils/i18nCompare.ts).
   Nếu user nói tên tiếng Việt/tiếng Anh chưa khớp khoá → map về khoá gần nhất; nếu vẫn mơ hồ → hỏi đúng 1 câu.
 
-## Đầu ra (BẮT BUỘC)
+## Đầu ra (BẮT BUỘC) — LUỒNG HỢP NHẤT (1 file .md + 1 HTML/màn)
 
-- **Đúng một** file tài liệu: `docs/i18n/<khoá-màn>-i18n-result.md`.
-- Nếu đã có `docs/i18n/<khoá-màn>-translation-map.md` → **cập nhật dòng trạng thái** (ngày quét + số liệu),
-  KHÔNG viết đè nội dung map. KHÔNG ghi ra folder khác trong `docs/`.
-- **Report tự sinh khi chạy** (không viết tay): `reports/<khoá>/compare.json` **và**
-  `reports/<khoá>/compare.html` — file HTML tự-chứa (mở trực tiếp được) hiển thị:
-  thẻ tổng quan (Dịch đúng / Sai chuẩn / Chưa dịch), bảng "Chưa dịch", và bảng "Chất lượng dịch"
-  (từng cặp EN→VI kèm badge ĐÚNG/SAI CHUẨN). HTML cũng được đính vào Playwright report.
-  → Trong file `-i18n-result.md`, **trỏ link tới HTML này** ở mục nguồn tham chiếu.
-- **Bản HTML kèm hình ảnh (BẮT BUỘC):** `reports/<khoá>/i18n-result.html` — render từ
-  `docs/i18n/<khoá>-i18n-result.md`, tự-chứa, có **hero screenshot** màn hình (lấy từ
-  `docs/features/<khoá>-assets/` hoặc `reports/<khoá>/screens/`). Xem bước cuối.
+> **Chuẩn mới:** mỗi màn chỉ có **1 file .md master** = `docs/features/<khoá>.md` (gộp tính năng +
+> test case + i18n) và **1 HTML kết quả** = `reports/<khoá>/<khoá>.html`. KHÔNG tạo thêm
+> `-i18n-result.md`, `compare.html`, `i18n-result.html` rời. Luồng code-gen giữ riêng
+> (`codegen-flow/`, `codegen-detail/`).
+
+- **Ghi kết quả i18n vào PHẦN B của master** `docs/features/<khoá>.md` (mục "Quét Tiếng Việt":
+  B1 còn tiếng Anh · B2 sai chuẩn · B3 đúng chuẩn · B4 UI vỡ). Nếu master chưa có → tạo mới theo
+  mẫu Home ([docs/features/home.md](../../../docs/features/home.md)).
+- **Dữ liệu thô tự sinh khi chạy:** chỉ `reports/<khoá>/compare.json` (spec `TC-i18n-screen-compare`
+  mặc định **chỉ ghi JSON**; bản `compare.html` rời chỉ khi đặt env `I18N_HTML=1` để debug).
+- **KHÔNG** đụng `docs/i18n/<khoá>-translation-map.md` (spec/glossary hạ tầng dùng chung) — chỉ trỏ link.
+- **1 HTML kết quả:** `node scripts/md-to-html.mjs docs/features/<khoá>.md --screen <khoá> --out reports/<khoá>/<khoá>.html`.
 
 ## Các bước
 

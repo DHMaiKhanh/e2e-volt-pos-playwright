@@ -24,6 +24,10 @@ async function openUnlocked(
   passcodeDialog: PasscodeDialog,
 ): Promise<void> {
   await businessInfoPage.goto();
+  // Cold `goto` renders the app before the passcode dialog mounts, so poll for
+  // it (best-effort) instead of checking immediately — otherwise the gate opens
+  // a beat later and blocks the form while we skip unlocking.
+  await passcodeDialog.waitForVisible(8_000).catch(() => {});
   if (await passcodeDialog.isOpen()) {
     await passcodeDialog.tickRemember30m();
     await passcodeDialog.enterPasscode(PASSCODE);

@@ -4,7 +4,7 @@
 > **Trạng thái app khi quét:** đã bật **Tiếng Việt** (đổi qua `/settings/language`, điều hướng client-side bằng router).
 > **Dùng để:** làm đặc tả (spec) cho tính năng quét tiếng Việt động trang Lịch sử đơn hàng — xem [`vietnamese-scan-flow.md`](vietnamese-scan-flow.md) mục Order History. Song song với [`home-translation-map.md`](home-translation-map.md).
 >
-> **🔎 Trạng thái quét (2026-07-06, TC-i18n-screen-compare):** trang chính `/order-history` — ❌ chưa dịch (text) **0** · ⚠️ sai chuẩn **0** · ✅ đúng chuẩn **10** · 📐 cắt chữ **1** ("Bộ lọc"). Còn lại: format ngày kiểu Anh (§3) + aria-label EN (§4) — report-only. Kết quả đầy đủ: [`order-history-i18n-result.md`](order-history-i18n-result.md) · Report trực quan: `reports/order-history/compare.html`.
+> **🔎 Trạng thái quét (2026-07-06, TC-i18n-screen-compare):** trang chính `/order-history` — ❌ chưa dịch (text) **0** · ⚠️ sai chuẩn **0** · ✅ đúng chuẩn **10** · 📐 cắt chữ **1** ("Bộ lọc"). Còn lại: format ngày kiểu Anh (§3) + aria-label EN (§4) — report-only. Kết quả đầy đủ: [`order-history-i18n-result.md`](../features/order-history.md) · Report trực quan: `reports/order-history/compare.html`.
 
 Ký hiệu:
 
@@ -66,10 +66,11 @@ Ký hiệu:
 
 `Đơn hàng #OD…` · `Hoá đơn` · `Hoàn tiền` · `Thông tin đơn hàng` · `Trạng thái` · `Mã đơn` · `Nhân viên thu ngân` · `Ngày đặt hàng` · `Khách hàng` · `Điện thoại` · `Tóm tắt đơn hàng` · `Tạm tính` · `Tổng giảm giá` · `Thuế` · `Tip` · `Tổng cộng` · `Chi tiết dịch vụ` · `Không có thông tin tiền boa.` · `Chi tiết thanh toán` · `Ghi chú đơn hàng` · `Không có ghi chú cho đơn hàng này.`
 
-### 1c. Dialog "Hoàn tiền" — đã dịch sạch ✅
+### 1c. Dialog "Hoàn tiền" — vỏ dialog đã dịch, ⚠️ dropdown còn EN (VP-2312)
 
-`Hoàn tiền` · `Nhập số tiền hoặc chọn lần thanh toán bạn muốn hoàn.` · `Chọn dịch vụ/sản phẩm` · `Tất cả dịch vụ` · `Số tiền hoàn` · `Phương thức hoàn tiền` · `Chọn phương thức thanh toán để hoàn` · `Chọn lý do hoàn tiền` · `Vui lòng chọn lý do hoàn tiền` · `Huỷ`
+`Hoàn tiền` · `Nhập số tiền hoặc chọn lần thanh toán bạn muốn hoàn.` · `Chọn dịch vụ/sản phẩm` · `Tất cả dịch vụ` · `Số tiền hoàn` · `Phương thức hoàn tiền` · `Chọn phương thức thanh toán để hoàn` · `Chọn lý do hoàn tiền` · `Vui lòng chọn lý do hoàn tiền` · `Huỷ` ✅
 
+> ⚠️ **VP-2312:** khi MỞ dropdown **"Phương thức hoàn tiền"**, các option lại hiển thị tiếng Anh: **"Cash (Remain $150.00)"** (mong đợi **"Tiền mặt (Còn lại $150.00)"**). Xem §2 #10.
 > Nguồn: `order-history/-order-history-detail/-refund/order-refund-confirm-dialog.tsx`.
 
 ### 1d. Nút hành động theo TRẠNG THÁI đơn (xác minh live 2026-07-02)
@@ -109,17 +110,19 @@ Panel chi tiết hiển thị **bộ nút khác nhau tuỳ trạng thái**. Tấ
 
 Đây là chuỗi tiếng Anh **hiển thị giữa UI Tiếng Việt** = lỗi dịch thật.
 
-| #   | Vùng                                         | Text (EN)                                                                                                       | Nguồn (data-tsd-source)                                                                 |                   Scan bắt?                   |
-| --- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | :-------------------------------------------: |
-| 1   | Dialog Hoá đơn · khách                       | **Current points:**                                                                                             | `settings/receipt/-receipt-preview/receipt-preview-customer.tsx:51`                     |     🕳️ (thiếu từ điển — đã thêm `points`)     |
-| 2   | Dialog Hoá đơn · khách                       | **Total visit:**                                                                                                | `receipt-preview-customer.tsx:51`                                                       |                 ✅ (`total`)                  |
-| 3   | Dialog Hoá đơn · dòng dịch vụ                | **Staff: \<tên\>**                                                                                              | `receipt-preview-service-item.tsx:272`                                                  |                 ✅ (`staff`)                  |
-| 4   | Dialog Hoá đơn · ghi chú                     | **Business Note:**                                                                                              | `receipt-preview-note.tsx:34`                                                           |            ✅ (`business`,`note`)             |
-| 5   | Dialog Hoá đơn · chính sách                  | **By signing below, you acknowledge that the services were provided to your satisfaction. No refunds allowed.** | `receipt-preview-policy.tsx:12`                                                         |             ✅ (câu + `service`)              |
-| 6   | Chi tiết thanh toán                          | **Amount: $44.00**                                                                                              | `order-history-detail/order-history-detail-payment.tsx:305`                             |                 ✅ (`amount`)                 |
-| 7   | Chi tiết thanh toán + Hoá đơn                | **Got: $40.00 (Change: $0.00 - Tip: $0.00)**                                                                    | `order-history-detail-payment.tsx:305`                                                  |          🕳️ **Cố ý BỎ QUA** (xem §6)          |
-| 8   | Thẻ đơn + Hoá đơn                            | **Cash / Card / Card, Cash** (phương thức TT)                                                                   | `order-history-list/order-history-item.tsx:104`                                         |   🕳️ (nằm trong data-zone thẻ đơn — xem §6)   |
-| 9   | Error boundary (khi mất kết nối/backend lỗi) | **Failed to fetch**                                                                                             | trang lỗi chung (`Lỗi` / `Đã có lỗi xảy ra` đã dịch, chi tiết là message exception thô) | ⚠️ borderline — message kỹ thuật, nên ẩn/dịch |
+| #   | Vùng                                                | Text (EN)                                                                                                       | Nguồn (data-tsd-source)                                                                 |                       Scan bắt?                       |
+| --- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | :---------------------------------------------------: |
+| 1   | Dialog Hoá đơn · khách                              | **Current points:**                                                                                             | `settings/receipt/-receipt-preview/receipt-preview-customer.tsx:51`                     |         🕳️ (thiếu từ điển — đã thêm `points`)         |
+| 2   | Dialog Hoá đơn · khách                              | **Total visit:**                                                                                                | `receipt-preview-customer.tsx:51`                                                       |                     ✅ (`total`)                      |
+| 3   | Dialog Hoá đơn · dòng dịch vụ                       | **Staff: \<tên\>**                                                                                              | `receipt-preview-service-item.tsx:272`                                                  |                     ✅ (`staff`)                      |
+| 4   | Dialog Hoá đơn · ghi chú                            | **Business Note:**                                                                                              | `receipt-preview-note.tsx:34`                                                           |                ✅ (`business`,`note`)                 |
+| 5   | Dialog Hoá đơn · chính sách                         | **By signing below, you acknowledge that the services were provided to your satisfaction. No refunds allowed.** | `receipt-preview-policy.tsx:12`                                                         |                 ✅ (câu + `service`)                  |
+| 6   | Chi tiết thanh toán                                 | **Amount: $44.00**                                                                                              | `order-history-detail/order-history-detail-payment.tsx:305`                             |                     ✅ (`amount`)                     |
+| 7   | Chi tiết thanh toán + Hoá đơn                       | **Got: $40.00 (Change: $0.00 - Tip: $0.00)**                                                                    | `order-history-detail-payment.tsx:305`                                                  |              🕳️ **Cố ý BỎ QUA** (xem §6)              |
+| 8   | Thẻ đơn + Hoá đơn                                   | **Cash / Card / Card, Cash** (phương thức TT)                                                                   | `order-history-list/order-history-item.tsx:104`                                         |       🕳️ (nằm trong data-zone thẻ đơn — xem §6)       |
+| 9   | Error boundary (khi mất kết nối/backend lỗi)        | **Failed to fetch**                                                                                             | trang lỗi chung (`Lỗi` / `Đã có lỗi xảy ra` đã dịch, chi tiết là message exception thô) |     ⚠️ borderline — message kỹ thuật, nên ẩn/dịch     |
+| 10  | Dialog Hoàn tiền · dropdown "Phương thức hoàn tiền" | **Cash (Remain $150.00)** (mong đợi "Tiền mặt (Còn lại $150.00)")                                               | `-refund/order-refund-confirm-dialog.tsx` (option dropdown phương thức)                 | ✅ `scanRefundMethod()` (VP-2312) — bộ dò chuyên biệt |
+| 11  | Panel chi tiết · thời gian                          | **Cập nhật cuối: Jun 30, 2026 03:58 AM** + tiêu đề nhóm ngày danh sách **"Jul 1, 2026"**                        | `components/ui/card.tsx:162` · `order-history-list.tsx:128`                             |   ✅ `EN_DATETIME` (VP-2313) — trước là 🕳️, xem §3    |
 
 > ⚠️ **Điểm quan trọng:** phương thức thanh toán ở **dialog Bộ lọc** ĐÃ dịch (`Thẻ`/`Tiền mặt`/`Thẻ quà tặng`/`Khác`) nhưng ở **thẻ đơn + hoá đơn** vẫn là `Cash`/`Card`. Không nhất quán → cần dịch enum phương thức TT dùng chung.
 > 💡 Dialog "Chi tiết hoá đơn" **tái dùng** các component `settings/receipt/-receipt-preview/*` → lỗi #1–#5 dùng chung với màn **Settings → Hoá đơn** (`/settings/receipt`); sửa 1 lần là hết cả 2 nơi.
@@ -139,7 +142,9 @@ Nút mở lịch hiển thị dải ngày; popover là `[role="dialog"]` (qua `c
 
 > 🐞 **Lỗi thật:** cả lưới lịch tiếng Anh giữa app Tiếng Việt. Vì tháng/thứ **không nằm trong từ điển UI** nên `detectScope` không tự bắt phần text → xem cách xử lý ở §5 (scanner lịch chuyên biệt bắt tên tháng tiếng Anh). aria "Previous/Next Month" thì bị bắt vào mục aria (chỉ báo cáo).
 
-Ngoài ra tiêu đề ngày trong danh sách (`order-history-list.tsx:128`) và dòng "Cập nhật cuối:" (`components/ui/card.tsx:162`) render ngày kiểu Anh: **"Jul 1, 2026"**, **"Cập nhật cuối: Jun 30, 2026 10:35 PM"** — lỗi định dạng ngày (locale) 🕳️.
+Ngoài ra tiêu đề ngày trong danh sách (`order-history-list.tsx:128`) và dòng "Cập nhật cuối:" (`components/ui/card.tsx:162`) render ngày kiểu Anh: **"Jul 1, 2026"**, **"Cập nhật cuối: Jun 30, 2026 03:58 AM"** — lỗi định dạng ngày (locale) — **[VP-2313](https://linear.app/fastboy/issue/VP-2313)**.
+
+> 🐞 **VP-2313 (nay đã tự bắt):** trước đây là điểm mù 🕳️ vì `detectScope` coi ngày trơ là DATA. Nay `scanOrderHistoryDetail()` có bộ dò `EN_DATETIME` (tháng viết tắt + năm, hoặc giờ HH:MM AM/PM) quét panel chi tiết + tiêu đề nhóm ngày → gộp vào `ui`. Cùng lớp bug với lưới lịch (§3 phía trên, VP-2198). Sửa gốc: set `locale` VN cho hàm format ngày dùng chung.
 
 ---
 
@@ -158,14 +163,16 @@ Ngoài ra tiêu đề ngày trong danh sách (`order-history-list.tsx:128`) và 
 
 ## 5. Ánh xạ sang implementation quét động ([`i18nOrderHistory.ts`](../../src/utils/i18nOrderHistory.ts))
 
-| Hàm / hằng                              | Bao phủ                              | Cách mở (đã verify)                                                                                                |
-| --------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `ORDER_HISTORY_POPUP_DEFS` (DatePicker) | Lịch (aria + screenshot)             | click nút có aria `icon-calendar` / nút chứa dải `dd/mm/yyyy`                                                      |
-| `scanOrderHistoryFilter()`              | Dialog Bộ lọc + 4 dropdown con       | click "Bộ lọc" → lần lượt mở Nhân viên / Phương thức TT / Trạng thái (popover `[role=dialog]`) + Sắp xếp (listbox) |
-| `scanOrderHistoryDatePicker()`          | **Grid lịch tiếng Anh** (§3)         | mở lịch → dò tên tháng/thứ tiếng Anh (bắt được điểm mù §3)                                                         |
-| `scanOrderHistoryDetail()`              | Panel chi tiết + Hoá đơn + Hoàn tiền | click thẻ đơn đầu → quét body → mở "Hoá đơn" → quét → mở "Hoàn tiền" → quét                                        |
+| Hàm / hằng                              | Bao phủ                                                        | Cách mở (đã verify)                                                                                                                                                                                                         |
+| --------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ORDER_HISTORY_POPUP_DEFS` (DatePicker) | Lịch (aria + screenshot)                                       | click nút có aria `icon-calendar` / nút chứa dải `dd/mm/yyyy`                                                                                                                                                               |
+| `scanOrderHistoryFilter()`              | Dialog Bộ lọc + 4 dropdown con                                 | click "Bộ lọc" → lần lượt mở Nhân viên / Phương thức TT / Trạng thái (popover `[role=dialog]`) + Sắp xếp (listbox)                                                                                                          |
+| `scanOrderHistoryDatePicker()`          | **Grid lịch tiếng Anh** (§3)                                   | mở lịch → dò tên tháng/thứ tiếng Anh (bắt được điểm mù §3)                                                                                                                                                                  |
+| `scanOrderHistoryDetail()`              | Panel chi tiết + Hoá đơn + Hoàn tiền + **2 bộ dò chuyên biệt** | click thẻ đơn đầu → quét body → mở "Hoá đơn" → quét → mở "Hoàn tiền" → quét → (VP-2312) mở dropdown "Phương thức hoàn tiền" → quét → (VP-2313) dò ngày/giờ EN trong panel                                                   |
+| `scanRefundMethod()` (VP-2312)          | Dropdown **"Phương thức hoàn tiền"** trong dialog Hoàn tiền    | mở combobox (placeholder "Chọn phương thức thanh toán để hoàn") → dò option EN "Cash (Remain $150.00)" bằng bộ dò phương thức TT (Cash/Card/Gift Card/Other/Check/Remain…) — bỏ qua luật tiền-trong-ngoặc của `detectScope` |
+| `EN_DATETIME` (VP-2313)                 | **Ngày/giờ định dạng Anh** trong panel + tiêu đề nhóm ngày     | regex tháng viết tắt (Jan…Dec) + năm, hoặc giờ HH:MM AM/PM → gộp vào `ui` của panel chi tiết. Cùng cơ chế `EN_MONTHS` cho lưới lịch (§3)                                                                                    |
 
-**Điều chỉnh `detectScope`** (nhỏ, an toàn): thêm `points` vào từ điển UI để bắt "Current points:" (#1). KHÔNG đụng luật khác.
+**Điều chỉnh `detectScope`** (nhỏ, an toàn): thêm `points` (bắt "Current points:" #1) và `remain`/`remaining` (bắt "Remain" ngoài ngoặc — VP-2312) vào từ điển UI. KHÔNG nới luật tiền-trong-ngoặc / ngày-đơn (2 điểm mù được xử lý bằng bộ dò chuyên biệt trong `scanOrderHistoryDetail`, tránh false-positive trên toàn app).
 
 > Mỗi trigger khai **nhiều fallback** (aria/role/text EN→VN→css) vì lúc quét app đang ở Tiếng Việt, nhãn EN gốc không khớp.
 

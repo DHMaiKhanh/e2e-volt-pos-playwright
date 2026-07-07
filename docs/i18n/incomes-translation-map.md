@@ -116,9 +116,9 @@ Vào bất kỳ route income nào khi chưa mở khoá → dialog keypad:
 
 | Ngày quét  | Màn            | Chuỗi UI | ❌ Chưa dịch                 | ⚠️ Sai chuẩn                   | 📐 UI vỡ | ✅ Đúng | Kết quả chi tiết                                               |
 | ---------- | -------------- | -------- | ---------------------------- | ------------------------------ | -------- | ------- | -------------------------------------------------------------- |
-| 2026-07-06 | income-daily   | 40       | 1 (`Tip`)                    | 3 (`Sale`→Doanh thu)           | 0        | 36      | [income-daily-i18n-result.md](income-daily-i18n-result.md)     |
-| 2026-07-06 | income-summary | 23       | 1 (`Tip`) + `Pay 1`/`Pay 2`ᵈ | 3 (`Gross/Net Income`, `Sale`) | 0        | 19      | [income-summary-i18n-result.md](income-summary-i18n-result.md) |
-| 2026-07-06 | income-staff   | 23       | 1 (`Tip`) + `Pay 1`/`Pay 2`ᵈ | 0ᵛ                             | 0        | 22      | [income-staff-i18n-result.md](income-staff-i18n-result.md)     |
+| 2026-07-06 | income-daily   | 40       | 1 (`Tip`)                    | 3 (`Sale`→Doanh thu)           | 0        | 36      | [income-daily-i18n-result.md](../features/income-daily.md)     |
+| 2026-07-06 | income-summary | 23       | 1 (`Tip`) + `Pay 1`/`Pay 2`ᵈ | 3 (`Gross/Net Income`, `Sale`) | 0        | 19      | [income-summary-i18n-result.md](../features/income-summary.md) |
+| 2026-07-06 | income-staff   | 23       | 1 (`Tip`) + `Pay 1`/`Pay 2`ᵈ | 0ᵛ                             | 0        | 22      | [income-staff-i18n-result.md](../features/income-staff.md)     |
 
 > ᵈ chỉ deep-scan (`TC-i18n-incomes`, mở panel chi tiết) bắt được — không nằm trong compare view mặc định.
 > ᵛ view mặc định 0; `Rate`→"Tỉ lệ" (VP-2267) ở panel chi tiết Salary compare chưa với tới.

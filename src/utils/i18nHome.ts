@@ -1,5 +1,14 @@
 import { type Page } from '@playwright/test';
-import { detectDialog, detectToasts, routerNavigate, type RouteScan } from '@utils/i18nScan';
+import {
+  DATA_ZONE_SELECTORS,
+  detectBody,
+  detectDialog,
+  detectEnDateTimeHits,
+  detectToasts,
+  routerNavigate,
+  scrollThroughPage,
+  type RouteScan,
+} from '@utils/i18nScan';
 import { type PopupDef } from '@utils/i18nPopups';
 
 /**
@@ -93,6 +102,15 @@ const ORDER_DIALOGS: OrderDialogDef[] = [
   // Merge Order dialog ("Gộp đơn") — order cards inside leak "Unknown" /
   // "Processing" / "N/A" (see docs/i18n/home-translation-map.md §3).
   { name: 'Trang chủ · Gộp đơn (Merge Order)', open: /merge order|gộp đơn/i },
+  // Customer Info ("Thông tin khách hàng", customer-information-dialog.tsx) —
+  // opened from the order's customer selector. Its "Đơn hàng" table leaks the
+  // English date format ("Jun 29, 2026 03:50 AM") + "Tip" column (VP-2299).
+  // Best-effort: the orders table only fills for an existing customer with
+  // history, so this may only surface the dialog chrome.
+  {
+    name: 'Trang chủ · Thông tin khách hàng (Customer Info)',
+    open: /thông tin khách|customer info|thêm khách|add customer|chọn khách/i,
+  },
 ];
 
 /**
@@ -166,6 +184,32 @@ export async function scanHomeOrderDialogs(
     if (await service.isVisible().catch(() => false)) {
       await service.click().catch(() => {});
       await page.waitForTimeout(1500);
+    }
+
+    // 2b) Scan the /home BODY now that an order is active. The static /home scan
+    //     runs with NO order so it misses the POS-with-order screen: the service
+    //     cards / search box that clip and the "null" card of the layout break
+    //     (VP-2298 — report-only UI vỡ), plus any order-state chrome. Scroll
+    //     first so lazy service cards mount. Best-effort.
+    //     Also merge the shared EN-datetime detector: the order panel's "Giờ hẹn"
+    //     line renders the English date/time "Jul 7, 2026 03:00 AM" (VP-2323),
+    //     which the generic detector skips as DATA. Only fires when the open order
+    //     actually carries an appointment time (an Order-Pending order), so it is
+    //     best-effort — a fresh staff+service order usually has none.
+    try {
+      await scrollThroughPage(page);
+      const body = await detectBody(page);
+      const dateHits = await detectEnDateTimeHits(page, 'main', DATA_ZONE_SELECTORS);
+      await record({
+        ...body,
+        ui: [...new Set([...body.ui, ...dateHits])],
+        route: '/home (đơn đang mở)',
+        name: 'Trang chủ · POS (đang có đơn)',
+        group: 'POS',
+        redirected: false,
+      });
+    } catch {
+      /* home-with-order body scan best-effort */
     }
 
     // 3) Open, scan, close each order-dependent dialog.
@@ -297,6 +341,86 @@ export async function scanHomeOrderDialogs(
     }
   } catch {
     /* home order flow unavailable — skip entirely */
+  }
+}
+
+/**
+ * Scan the Customer Display screen (/customer) WITH an active order. The static
+ * route scan hits /customer in its idle "WELCOME TO" state; but once an order is
+ * open (see {@link scanHomeOrderDialogs}), the customer-facing display mirrors it
+ * and leaks English — "Order Details", "Staff:", "Subtotal", "Total Discount",
+ * "Promotion", the payment methods (Card / Cash / Other / Gift Card), and the
+ * phone-confirm "Hello there! Is this your phone number?" / "No, enter again" /
+ * "Yes" (VP-2302). MUST run AFTER an order is set up — the order lives in the
+ * in-memory store this display reads, so a full reload would lose it (hence
+ * client-side navigate only). Best-effort — never throws.
+ */
+export async function scanCustomerDisplay(
+  page: Page,
+  record: (scan: RouteScan) => Promise<void>,
+): Promise<void> {
+  try {
+    await routerNavigate(page, '/customer');
+    await page.waitForTimeout(1500);
+    await scrollThroughPage(page);
+    await record({
+      ...(await detectBody(page)),
+      route: '/customer (đơn đang mở)',
+      name: 'Màn hình khách hàng · Customer Display (đang có đơn)',
+      group: 'System',
+      redirected: false,
+    });
+
+    // Customer-display payment-FLOW states (Add Tip, Payment Complete) only
+    // appear once the cashier starts a real payment — this scan never charges an
+    // order, so they're recorded manual (reachable:false) for traceability. The
+    // dictionary already carries their words ('tip'/'terms'/'privacy'/'policy',
+    // 'points'/'message') so they're caught if ever scanned in that state.
+    const manualCustomer = (name: string, note: string): RouteScan => ({
+      route: `/customer ▸ ${name}`,
+      name,
+      group: 'System',
+      ui: [],
+      aria: [],
+      overflow: [],
+      stub: false,
+      path: '/customer',
+      redirected: true,
+      popup: true,
+      reachable: false,
+      error: note,
+    });
+    await record(
+      manualCustomer(
+        'Add Tip (Customer Display)',
+        'Màn nhập tip phía khách ("Add a tip", "Custom Tip", "No Tip", "By proceeding… Terms and Privacy Policy") — chỉ hiện khi thu ngân bắt đầu thanh toán. Kiểm tra thủ công (VP-2303).',
+      ),
+    );
+    await record(
+      manualCustomer(
+        'Payment Complete (Customer Display)',
+        'Màn thanh toán hoàn tất phía khách ("Congrats… points", "Payment complete", "Text Message"/"Email") — cần thanh toán thật. Kiểm tra thủ công (VP-2304).',
+      ),
+    );
+    // Legal popups linked from the customer phone-entry / "By proceeding… Terms
+    // and Privacy Policy" line — full English text bodies (GoCheckIn ToS). Opened
+    // from the customer-facing phone-confirm flow, so recorded manual. Dict words
+    // 'terms'/'service'/'privacy'/'policy' + the 'Welcome to…' forceEnglish rule
+    // catch them if ever scanned.
+    await record(
+      manualCustomer(
+        'Terms Service (popup phía khách)',
+        'Popup "Terms Service" mở từ màn nhập SĐT khách ("Welcome to GoCheckIn…", "1. Acceptance of Terms"…) — cần luồng nhập SĐT phía khách. Kiểm tra thủ công (VP-2308).',
+      ),
+    );
+    await record(
+      manualCustomer(
+        'Privacy Policy (popup phía khách)',
+        'Popup "Privacy Policy" mở từ màn nhập SĐT khách — toàn văn tiếng Anh. Kiểm tra thủ công (VP-2309).',
+      ),
+    );
+  } catch {
+    /* customer display unavailable — skip */
   }
 }
 

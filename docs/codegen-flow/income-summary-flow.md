@@ -42,15 +42,15 @@ Linear doc "Income Report" (income-report-cd80210c48f3)
 
 ## Bảng mắt xích
 
-| #   | File nguồn                 | →   | File đích                                                                              | Khâu tạo       | Ghi chú                                 |
-| --- | -------------------------- | --- | -------------------------------------------------------------------------------------- | -------------- | --------------------------------------- |
-| 1   | Linear "Income Report"     | →   | [docs/linear/income-report.md](../linear/income-report.md)                             | offline mirror | mục Income Summary                      |
-| 2   | linear/income-report.md    | →   | [docs/features/income-summary.md](../features/income-summary.md)                       | Skill 1        | Quét cả panel chi tiết (5 khối)         |
-| 3   | features/income-summary.md | →   | [docs/testcases/income-summary-testcases.md](../testcases/income-summary-testcases.md) | Skill 2        | ~70 TC theo nhóm section                |
-| 4   | testcases.md               | →   | [src/pages/pos/IncomeSummaryPage.ts](../../src/pages/pos/IncomeSummaryPage.ts)         | có sẵn         | Scrape detail sections + reconciliation |
-| 5   | testcases.md               | →   | tests/regression/incomes/income-summary{,-past,-reconciliation,-ui}/                   | có sẵn         | 4 folder spec                           |
-| 6   | spec + helpers             | →   | src/reports/incomeCalcCore.ts, src/utils/incomeSummary\*.ts                            | có sẵn         | Engine tính lại & so khớp               |
-| 7   | spec                       | →   | reports/\* + reports/income-summary/                                                   | runtime        | Reporters + report riêng                |
+| #   | File nguồn                 | →   | File đích                                                                      | Khâu tạo       | Ghi chú                                 |
+| --- | -------------------------- | --- | ------------------------------------------------------------------------------ | -------------- | --------------------------------------- |
+| 1   | Linear "Income Report"     | →   | [docs/linear/income-report.md](../linear/income-report.md)                     | offline mirror | mục Income Summary                      |
+| 2   | linear/income-report.md    | →   | [docs/features/income-summary.md](../features/income-summary.md)               | Skill 1        | Quét cả panel chi tiết (5 khối)         |
+| 3   | features/income-summary.md | →   | [docs/testcases/income-summary-testcases.md](../features/income-summary.md)    | Skill 2        | ~70 TC theo nhóm section                |
+| 4   | testcases.md               | →   | [src/pages/pos/IncomeSummaryPage.ts](../../src/pages/pos/IncomeSummaryPage.ts) | có sẵn         | Scrape detail sections + reconciliation |
+| 5   | testcases.md               | →   | tests/regression/incomes/income-summary{,-past,-reconciliation,-ui}/           | có sẵn         | 4 folder spec                           |
+| 6   | spec + helpers             | →   | src/reports/incomeCalcCore.ts, src/utils/incomeSummary\*.ts                    | có sẵn         | Engine tính lại & so khớp               |
+| 7   | spec                       | →   | reports/\* + reports/income-summary/                                           | runtime        | Reporters + report riêng                |
 
 ## Ghi chú
 

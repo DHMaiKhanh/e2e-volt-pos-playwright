@@ -1,5 +1,5 @@
 ---
-title: Kết quả quét Tiếng Việt — Chấm công (Time Keeping)
+title: time-keeping — Tài liệu hợp nhất (i18n; feature/testcase bổ sung sau)
 screen: time-keeping
 route: /home?dialog=time-keeping
 scanned-at: 2026-07-05
@@ -7,6 +7,8 @@ source: MCP Playwright (dialog không phải route — quét trực tiếp EN + 
 ---
 
 # Chấm công (Time Keeping) — Quét Tiếng Việt / UI vỡ / dịch đúng chuẩn
+
+> **Tài liệu hợp nhất (1 file/màn).** Hiện mới có **PHẦN i18n** (quét Tiếng Việt + nghĩa). Đặc tả tính năng & test case sẽ bổ sung vào chính file này khi chạy skill 1/2. Luồng code-gen (nếu có) giữ riêng ở codegen-flow/ + codegen-detail/. Kết quả HTML: reports/time-keeping/time-keeping.html.
 
 Dialog mở từ **icon đồng hồ trên header** màn Home. Có **deep-link**:
 `/home?dialog=time-keeping` (mở thẳng dialog — dùng cho scan tự động, ổn định hơn

@@ -92,6 +92,7 @@ test.describe(`i18n — so sánh EN↔VI theo màn ${Tag.REGRESSION}`, () => {
     const generatedAt = new Date().toISOString();
     const uiBroken = { clipped: viScan.overflow ?? [], xOverflow: viScan.xOverflow ?? 0 };
     const jsonPath = path.join(outDir, `compare.json`);
+    const htmlPath = path.join(outDir, `compare.html`);
     writeFileSync(
       jsonPath,
       JSON.stringify(
@@ -111,7 +112,10 @@ test.describe(`i18n — so sánh EN↔VI theo màn ${Tag.REGRESSION}`, () => {
       'utf8',
     );
 
-    // Self-contained HTML twin of the JSON — eyeball translation quality.
+    // Luồng hợp nhất: mặc định spec chỉ ghi JSON (dữ liệu). Kết quả HTML DUY NHẤT
+    // của màn là `reports/<screen>/<screen>.html` render từ master .md
+    // (scripts/build-screen-report.mjs). Bản compare.html rời chỉ ghi khi
+    // I18N_HTML=1 (debug). Vẫn đính HTML vào Playwright report để soi nhanh.
     const html = renderCompareReport({
       screen: SCREEN,
       route: def.route,
@@ -121,8 +125,9 @@ test.describe(`i18n — so sánh EN↔VI theo màn ${Tag.REGRESSION}`, () => {
       pairs,
       uiBroken,
     });
-    const htmlPath = path.join(outDir, `compare.html`);
-    writeFileSync(htmlPath, html, 'utf8');
+    if (process.env.I18N_HTML === '1') {
+      writeFileSync(htmlPath, html, 'utf8');
+    }
     await test.info().attach(`compare-${SCREEN}.html`, { body: html, contentType: 'text/html' });
 
     // eslint-disable-next-line no-console
@@ -146,7 +151,7 @@ test.describe(`i18n — so sánh EN↔VI theo màn ${Tag.REGRESSION}`, () => {
         ((viScan.xOverflow ?? 0) > 8 || (viScan.overflow?.length ?? 0) > 0
           ? `\n📐 UI vỡ: tràn ngang ${viScan.xOverflow ?? 0}px · cắt chữ ${viScan.overflow?.length ?? 0}`
           : '') +
-        `\nJSON: ${jsonPath}\nHTML: ${htmlPath}\n`,
+        `\nJSON: ${jsonPath}${process.env.I18N_HTML === '1' ? `\nHTML: ${htmlPath}` : ''}\n`,
     );
 
     // Gate on untranslated (authoritative, data-filtered); suspect + UI vỡ report-only.

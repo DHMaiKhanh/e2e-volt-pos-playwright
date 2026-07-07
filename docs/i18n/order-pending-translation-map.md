@@ -4,7 +4,7 @@
 > **Trạng thái app khi quét (MCP):** đang hiển thị **tiếng Anh**.
 > **Dùng để:** đặc tả cho quét động trang Đơn đang chờ — xem [`vietnamese-scan-flow.md`](vietnamese-scan-flow.md) §3.3.
 > **Triển khai:** [`src/utils/i18nOrderPending.ts`](../../src/utils/i18nOrderPending.ts) · spec riêng [`TC-i18n-order-pending-vietnamese-scan.spec.ts`](../../tests/regression/i18n/TC-i18n-order-pending-vietnamese-scan.spec.ts).
-> **Quét gần nhất (compare EN↔VI):** 2026-07-06 — tổng 6 · ❌ chưa dịch 1 (`Unknown`→"Không rõ") · ⚠️ sai chuẩn 0 · 📐 UI vỡ 0. Chi tiết: [`order-pending-i18n-result.md`](order-pending-i18n-result.md).
+> **Quét gần nhất (compare EN↔VI):** 2026-07-06 — tổng 6 · ❌ chưa dịch 1 (`Unknown`→"Không rõ") · ⚠️ sai chuẩn 0 · 📐 UI vỡ 0. Chi tiết: [`order-pending-i18n-result.md`](../features/order-pending.md).
 
 Ký hiệu: ✅ đã xác minh mở được qua MCP · ⚠️ HARDCODE (chưa `t()`) · 🔁 cần điều kiện · 🔇 nút icon thiếu nhãn.
 

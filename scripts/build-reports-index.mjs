@@ -75,7 +75,7 @@ const classify = (json) => {
 };
 
 /** Collect {html, json, meta} report entries in a folder. */
-const collectReports = (dir) => {
+const collectReports = (dir, screen) => {
   const out = [];
   for (const name of readdirSync(dir)) {
     if (!name.endsWith('.html')) continue;
@@ -83,6 +83,12 @@ const collectReports = (dir) => {
     const jsonPath = path.join(dir, `${stem}.json`);
     const json = existsSync(jsonPath) ? readJson(jsonPath) : null;
     const info = classify(json);
+    // The consolidated master `<screen>.html` (rendered from the single master
+    // .md) is the ONE canonical result — surface it first.
+    if (screen && stem === screen) {
+      info.kind = 'master';
+      info.label = 'Tài liệu hợp nhất (KẾT QUẢ)';
+    }
     // Doc HTML twins (from md-to-html.mjs) have no JSON — label them by filename.
     if (info.kind === 'unknown') {
       const DOC = {
@@ -104,8 +110,8 @@ const collectReports = (dir) => {
       ...info,
     });
   }
-  // Suite first, then compare, deep-scan, docs, then anything else.
-  const order = { suite: 0, compare: 1, deepscan: 2, doc: 3, unknown: 4 };
+  // Master (consolidated result) first, then suite, compare, deep-scan, docs.
+  const order = { master: -1, suite: 0, compare: 1, deepscan: 2, doc: 3, unknown: 4 };
   return out.sort((a, b) => order[a.kind] - order[b.kind]);
 };
 
@@ -143,8 +149,7 @@ entries.sort();
 
 const screenSections = entries
   .map((screen) => {
-    const reports = collectReports(path.join(REPORTS, screen));
-    const routeGuess = reports.find((r) => r)?.stem ?? screen;
+    const reports = collectReports(path.join(REPORTS, screen), screen);
     return section(screen, `/${screen.replace(/-/g, '-')}`, reports);
   })
   .join('\n');
@@ -161,7 +166,7 @@ if (existsSync(auditDir)) {
 
 const generatedAt = new Date().toISOString();
 const totalReports =
-  entries.reduce((n, s) => n + collectReports(path.join(REPORTS, s)).length, 0) +
+  entries.reduce((n, s) => n + collectReports(path.join(REPORTS, s), s).length, 0) +
   (existsSync(auditDir)
     ? collectReports(auditDir).filter((r) => /^(auto-scan|incomes-scan)$/.test(r.stem)).length
     : 0);
@@ -189,6 +194,8 @@ const html = `<!doctype html>
   .m { font-size: 12px; padding: 2px 8px; border-radius: 999px; }
   .rc-t { margin-top: 8px; font-size: 11px; color: #94a3b8; }
   .tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: .03em; }
+  .tag-master { background: #0f172a; color: #fff; }
+  .rc:has(.tag-master) { border-color: #0f172a; border-width: 2px; }
   .tag-suite { background: #ede9fe; color: #5b21b6; }
   .tag-compare { background: #dbeafe; color: #1e40af; }
   .tag-deepscan { background: #fef3c7; color: #92400e; }

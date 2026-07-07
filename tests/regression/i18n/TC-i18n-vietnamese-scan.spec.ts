@@ -17,7 +17,13 @@ import {
   type RouteScan,
 } from '@utils/i18nScan';
 import { POPUP_DEFS, scanPopup } from '@utils/i18nPopups';
-import { HOME_POPUP_DEFS, scanHomeOrderDialogs } from '@utils/i18nHome';
+import {
+  HOME_POPUP_DEFS,
+  scanHomeOrderDialogs,
+  scanTimeKeepingDialog,
+  scanCustomerDisplay,
+} from '@utils/i18nHome';
+import { scanSplitOrder } from '@utils/i18nSplitOrder';
 import {
   ORDER_HISTORY_POPUP_DEFS,
   scanOrderHistoryFilter,
@@ -54,8 +60,59 @@ import {
 test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
   test('TC-I18N-VI-SCAN: list screens not yet translated to Vietnamese', async ({ page }) => {
     // 10 min: the full walk now includes deep scans for Home, Order History,
-    // Order Pending and the 3 Income reports — well past the old 5-min budget.
+    // Order Pending, the 3 Income reports, Time Keeping and Split Order — well
+    // past the old 5-min budget.
     test.setTimeout(600_000);
+
+    // ── VP-2115 "Mutiple Language Improvement" bug coverage ────────────────
+    // Each sub-bug below is a case this scan must surface. Where covered:
+    //   VP-2283/VP-2294 "Tip" chưa dịch (nhiều màn) → dict 'tip' + income/receipt/
+    //                                                 order-history/checkout/batch scans
+    //   VP-2284 /cash-drawer chưa dịch             → /cash-drawer route body (nút đã bắt
+    //                                                 qua dict) + headings "Alerts"/"Dialogs"
+    //                                                 nay bắt qua dict 'alert'/'alerts'/'dialogs'
+    //   VP-2285/VP-2282 "WELCOME TO"               → /customer route + forceEnglish regex
+    //   VP-2286 "Gift Card […]" / "Cannot use…"    → dict 'gift'/'card' + checkout &
+    //                                                 order-history detail scans
+    //   VP-2243 "Finishing setup…"/"Waiting…"      → dict 'setup'/'waiting'/'approval'
+    //   VP-2200/VP-2139/VP-2144 "Unknown"          → dict 'unknown' + order-pending/
+    //                                                 home body & Merge-Order dialog
+    //   VP-2142 toast "Printer not connected"      → dict 'printer' + Home Print-toast scan
+    //   VP-2198 lịch còn EN (June/Mo Tu…)          → date-picker grid scans (OH/OP/Incomes)
+    //   VP-2244 tabs tìm kiếm (All/Appointment…)   → Home Global-Search popup
+    //   VP-2143 panel Notifications                → notification bell panel scan (§4b)
+    //   VP-2140 "Quick Pay"                        → dict 'quick'/'pay' + Home Quick-Pay popup
+    //   VP-2194/VP-2196 "Got/Change/Tip"/"Cash"    → dict + order-history detail scan
+    //   VP-2293 "Order #"/"Unknown" (checkout)     → dict + checkout subroute scan
+    //   VP-2270/VP-2271/VP-2278 "Active/Inactive"  → dict + services/staffs body & popups
+    //   VP-2273/VP-2253 "Pay 1/Pay 2"              → dict 'pay' + Staff/Income detail panels
+    //   VP-2274 "Closed" (giờ làm việc)            → dict 'closed' + Staff work-hours tab
+    //   VP-2246 "No staffs found"                  → dict 'found'/'staffs' + Time-Keeping dialog
+    //   VP-2288/VP-2290/VP-2291/VP-2292 Tách đơn    → dict 'check' + Split-Order scan
+    //   VP-2301 Order/POS gốc "Order #"/"Points:"  → /order/$id base scan (ORDER_SUBROUTES sub:'')
+    //   VP-2302 Customer Display khi có đơn         → scanCustomerDisplay + dict 'promotion'/'phone'/'enter'
+    //   VP-2298 UI vỡ Home khi có đơn               → home body scan có đơn (report-only UI vỡ)
+    //   VP-2299 popup Thông tin khách hàng          → Customer-Info trong ORDER_DIALOGS (best-effort)
+    //   VP-2295 popup Chỉnh tip (Order History)     → DETAIL_DIALOGS "Chỉnh tip"
+    //   VP-2312 dropdown "Phương thức hoàn tiền"    → scanRefundMethod (Order History) + dict 'remain'
+    //   VP-2313 ngày/giờ EN "Jun 30, 2026 03:58 AM" → EN_DATETIME dò trong scanOrderHistoryDetail
+    //   VP-2303 Add Tip (Customer Display)          → dict 'terms'/'privacy'/'policy'; manual (cần thanh toán thật)
+    //   VP-2304 Payment Complete (Customer Display) → dict 'message'/'points'; manual (cần thanh toán thật)
+    //   VP-2305 Payment Success (Staff)             → /order/$id/payment-success subroute scan (đã phủ)
+    //   VP-2306 Popup thẻ quà tặng không đủ số dư   → dict 'check'; manual (cần thanh toán thẻ quà tặng)
+    //   VP-2307 "Unknown" màn Order/Thanh toán      → dict 'unknown' + /order/$id & checkout scans (đã phủ)
+    //   VP-2308 Popup Terms Service (phía khách)    → dict 'terms'/'service' + forceEnglish; manual
+    //   VP-2309 Popup Privacy Policy (phía khách)   → dict 'privacy'/'policy'; manual
+    //   VP-2311 Toast xác nhận lịch hẹn             → dict 'confirmed'/'appointment' (đã bắt qua panel Thông báo); manual
+    //   VP-2315 Custom tip (luồng TT thẻ)           → dict 'custom'/'tip'/'done' (đã có); manual (cần thanh toán thẻ)
+    //   VP-2316 Total Amount (TT thẻ)               → dict 'total'/'amount'/'tip'/'present'; manual (cần đầu đọc thẻ)
+    //   VP-2317 Add Signature (TT thẻ)              → dict 'sign'/'signature'/'transaction'; manual (cần giao dịch thẻ được duyệt)
+    //   VP-2318 Popup "Payment Successfully"        → dict 'payment'/'successfully'; manual (cần hoàn tất thanh toán)
+    //   VP-2319 Popup "Waiting for connect device"  → dict 'waiting'/'connect'/'device'/'getting'/'ready'; manual (cần kết nối đầu đọc)
+    //   VP-2320 Popup "Getting ready to charge"     → dict 'getting'/'ready'/'charge' + forceEnglish "PRESENT CARD"/"CARD READ…"; manual
+    //   VP-2321 Màn tiến hành thanh toán thẻ         → dict 'total'/'amount'/'tip'/'processing' + forceEnglish "PRESENT CARD"/"CARD READ…"; manual (present→read→processing)
+    //   VP-2310/VP-2143 Appointment page — panel     → notification bell panel scan (§4b) flags "… appointment on … has been confirmed." (sentence rule); dict 'appointment'/'confirmed'
+    // The scan is the deliverable; the gate (§7) fails on any screen still in EN.
 
     const outDir = path.resolve('reports', 'i18n-audit');
     // Dedicated dir so auto-generated shots don't mix with the manual audit's screens/.
@@ -182,7 +239,12 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
     //    payment-success screens (one under /checkout, one at order root); the
     //    route label keeps them apart. (Login/splashscreen are intentionally
     //    out of scope here — they require a logged-out session.)
+    // `sub: ''` = the ORDER/POS base screen (/order/$id) itself — the edit-order
+    // view with the right-side bill summary ("Order #", "Points:", "Total
+    // visits:", the gift-card line — VP-2301/VP-2286/VP-2140). The rest are its
+    // checkout sub-routes.
     const ORDER_SUBROUTES: { sub: string; name: string }[] = [
+      { sub: '', name: 'Order / POS (Sửa đơn)' },
       { sub: 'checkout', name: 'Thanh toán (Checkout)' },
       { sub: 'checkout/view-cart', name: 'Checkout · Xem giỏ hàng' },
       { sub: 'checkout/processing-payment', name: 'Checkout · Đang xử lý thanh toán' },
@@ -197,20 +259,129 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
       });
       if (orderId) {
         for (const { sub, name } of ORDER_SUBROUTES) {
-          await routerNavigate(page, `/order/${orderId}/${sub}`);
+          const to = sub ? `/order/${orderId}/${sub}` : `/order/${orderId}`;
+          await routerNavigate(page, to);
           await page.waitForTimeout(1700);
           const raw = await detectBody(page);
           await record({
             ...raw,
-            route: `/order/$id/${sub}`,
+            route: sub ? `/order/$id/${sub}` : '/order/$id',
             name,
             group: 'POS',
-            redirected: raw.path !== `/order/${orderId}/${sub}`,
+            redirected: raw.path !== to,
           });
         }
       }
     } catch {
       /* checkout flow unavailable — skip */
+    }
+
+    // 4a2) Gift-card insufficient-balance popup (VP-2306) — "Dùng số dư & Thêm
+    //      check mới" — only appears mid-checkout when a gift card can't cover the
+    //      total. Needs a live gift-card payment attempt, so it's recorded manual
+    //      (reachable:false — never charges). The word "check" is in the UI
+    //      dictionary, so it's caught if ever scanned in that state.
+    scans.push({
+      route: '/order/$id/checkout ▸ Thẻ quà tặng không đủ số dư',
+      name: 'Checkout · Popup thẻ quà tặng không đủ số dư (còn "check")',
+      group: 'POS',
+      ui: [],
+      aria: [],
+      overflow: [],
+      stub: false,
+      path: '/order/$id/checkout',
+      redirected: true,
+      popup: true,
+      reachable: false,
+      error:
+        'Cần thanh toán bằng thẻ quà tặng không đủ số dư — scan không thanh toán thật. Kiểm tra thủ công (VP-2306).',
+    });
+
+    // 4a3) Appointment-confirm toast (VP-2311) — "X appointment on … has been
+    //      confirmed." Confirming an appointment MUTATES its status (notifies the
+    //      customer), so the scan never triggers it — recorded manual. The exact
+    //      string is already flagged via the notification panel scan (§4b), so it
+    //      is in the deduped list regardless.
+    scans.push({
+      route: '/appointment ▸ Toast xác nhận lịch hẹn',
+      name: 'Lịch hẹn · Toast xác nhận ("… has been confirmed.")',
+      group: 'POS',
+      ui: [],
+      aria: [],
+      overflow: [],
+      stub: false,
+      path: '/appointment',
+      redirected: true,
+      popup: true,
+      reachable: false,
+      error:
+        'Xác nhận lịch hẹn làm thay đổi trạng thái (gửi thông báo khách) — scan không tự xác nhận. Chuỗi đã được bắt qua panel Thông báo (§4b). Kiểm tra thủ công (VP-2311).',
+    });
+
+    // 4a4) Card-payment terminal flow on the Order Page (VP-2315…VP-2321) — the
+    //      customer/terminal screens shown DURING a real card transaction: Custom
+    //      tip, Total Amount ("PRESENT CARD"), Add Signature, the "Waiting for
+    //      connect device" / "Getting ready to charge" reader popups, the
+    //      "Payment Successfully" popup and the present→read→processing progress
+    //      screens ("Processing" — VP-2321). All require a live card reader + a
+    //      real charge, which the scan never performs, so each is recorded manual
+    //      (reachable:false) for traceability. The dictionary carries their words
+    //      ('present'/'sign'/'signature'/'transaction'/'getting'/'ready'/
+    //      'successfully'/'processing'/'total'/'amount') and `forceEnglish` catches
+    //      the ALL-CAPS reader prompts ("PRESENT CARD"/"CARD READ OK, REMOVE
+    //      CARD"), so they're flagged if the scan ever lands on one of these states.
+    const CARD_PAY_FLOW: { route: string; name: string; note: string }[] = [
+      {
+        route: '/order/$id ▸ Custom tip (thanh toán thẻ)',
+        name: 'Order · Custom tip (luồng thanh toán thẻ)',
+        note: 'Màn nhập tip tuỳ chọn ("Custom tip on $110.00", nút "Done") — chỉ hiện khi thanh toán thẻ. Kiểm tra thủ công (VP-2315).',
+      },
+      {
+        route: '/order/$id ▸ Total Amount (thanh toán thẻ)',
+        name: 'Order · Total Amount (thanh toán thẻ)',
+        note: 'Màn tổng tiền phía đầu đọc thẻ ("Total Amount", "Tip", "PRESENT CARD") — cần đầu đọc thẻ. Kiểm tra thủ công (VP-2316).',
+      },
+      {
+        route: '/order/$id ▸ Add Signature (thanh toán thẻ)',
+        name: 'Order · Add Signature (thanh toán thẻ)',
+        note: 'Màn ký tên ("Add Signature", "Transaction approved. Please sign your name.", "Sign here", "Clear", "Continue") — hiện sau khi giao dịch thẻ được duyệt. Kiểm tra thủ công (VP-2317).',
+      },
+      {
+        route: '/order/$id ▸ Popup "Payment Successfully"',
+        name: 'Order · Popup Thanh toán thành công ("Payment Successfully")',
+        note: 'Popup xác nhận thanh toán thành công ("Payment Successfully") — cần hoàn tất thanh toán. Kiểm tra thủ công (VP-2318).',
+      },
+      {
+        route: '/order/$id ▸ Popup "Waiting for connect device"',
+        name: 'Order · Popup chờ kết nối đầu đọc ("Waiting for connect device")',
+        note: 'Popup chờ kết nối thiết bị ("Waiting for connect device...", "Getting ready to charge") — cần kết nối đầu đọc thẻ. Kiểm tra thủ công (VP-2319).',
+      },
+      {
+        route: '/order/$id ▸ Popup "Getting ready to charge"',
+        name: 'Order · Popup đọc thẻ ("Getting ready to charge")',
+        note: 'Popup đọc thẻ ("Getting ready to charge", "PRESENT CARD", "CARD READ OK, REMOVE CARD") — cần đầu đọc thẻ thật. Kiểm tra thủ công (VP-2320).',
+      },
+      {
+        route: '/order/$id ▸ Màn tiến hành thanh toán thẻ (Processing)',
+        name: 'Order · Tiến hành thanh toán thẻ (present → read → "Processing")',
+        note: 'Luồng tiến hành thanh toán thẻ ("Total Amount"/"Tip"/"PRESENT CARD" → "CARD READ OK, REMOVE CARD" → "Processing") — cần đầu đọc thẻ + giao dịch thật. Kiểm tra thủ công (VP-2321).',
+      },
+    ];
+    for (const { route, name, note } of CARD_PAY_FLOW) {
+      scans.push({
+        route,
+        name,
+        group: 'POS',
+        ui: [],
+        aria: [],
+        overflow: [],
+        stub: false,
+        path: '/order/$id',
+        redirected: true,
+        popup: true,
+        reachable: false,
+        error: note,
+      });
     }
 
     // 4b) Best-effort: the notification bell panel + the screen a notification
@@ -436,6 +607,23 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
     //     active order (leaves a staff+service line on /home).
     await scanHomeOrderDialogs(page, record);
 
+    // 4f2) Customer Display (/customer) WITH the active order still open from the
+    //      step above — mirrors the order and leaks "Order Details", "Subtotal",
+    //      "Promotion", the phone-confirm prompt… (VP-2302). Runs right after so
+    //      the in-memory order is still alive.
+    await scanCustomerDisplay(page, record);
+
+    // 4g) Chấm công (Time Keeping) dialog — its "Nhân viên sẵn sàng" column empty
+    //     state renders the hardcoded English "No staffs found." (VP-2246). The
+    //     /time-tracking route above rarely shows the empty state; the dialog
+    //     (deep-linked via ?dialog=time-keeping) reliably surfaces it.
+    await scanTimeKeepingDialog(page, record);
+
+    // 4h) Split Order (/order/$id/split-order) — the "Check" tabs / paid-check
+    //     summary (VP-2290/2291) plus its payment-flow popups (VP-2292, tracked
+    //     for manual review — the scan never charges a real check). Best-effort.
+    await scanSplitOrder(page, record);
+
     // 5) Diff vs the previous run, then write the report (HTML + JSON).
     const generatedAt = new Date().toISOString();
     mkdirSync(outDir, { recursive: true });
@@ -498,6 +686,14 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
     //    this is the localization gate. Set I18N_LENIENT=1 for an
     //    informational-only run (report + console, never fails).
     if (process.env.I18N_LENIENT !== '1') {
+      // Coverage floor — the walk must reach its full surface set (static routes +
+      // popups + deep scans). Guards against a silent regression that drops
+      // coverage and lets untranslated screens slip through unscanned. Static
+      // routes (22) + the popup loop alone push well past this even when every
+      // deep/best-effort surface is unreachable in the session.
+      expect
+        .soft(scans.length, 'Số bề mặt đã quét giảm bất thường — kiểm tra lại luồng quét')
+        .toBeGreaterThanOrEqual(40);
       for (const s of untranslated) {
         expect.soft(s.ui, `"${s.name}" (${s.route}) còn chuỗi tiếng Anh`).toHaveLength(0);
       }
