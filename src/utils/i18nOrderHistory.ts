@@ -4,6 +4,7 @@ import {
   DATA_VALUES,
   DIALOG_SELECTOR,
   detectDialog,
+  detectEnDateTimeHits,
   detectScope,
   routerNavigate,
   type RawDetect,
@@ -31,7 +32,18 @@ import { type PopupDef } from '@utils/i18nPopups';
  *   4. {@link scanOrderHistoryDetail} — the right-side detail panel plus the two
  *      order-dependent dialogs it exposes: "Hoá đơn" (Receipt) and "Hoàn tiền"
  *      (Refund). The Receipt reuses the settings/receipt preview components, so
- *      its English leaks are shared with /settings/receipt.
+ *      its English leaks are shared with /settings/receipt. Also flags two leaks
+ *      the generic detector deliberately skips:
+ *        • VP-2313 — English date/time in the panel ("Cập nhật cuối: Jun 30,
+ *          2026 03:58 AM") + the list's day-group headers ("Jul 1, 2026"). A bare
+ *          date is treated as merchant DATA in detectScope, so a targeted
+ *          abbreviated-month/AM-PM detector catches it (same class as the
+ *          calendar grid in scanOrderHistoryDatePicker).
+ *        • VP-2312 — the Refund dialog's "Phương thức hoàn tiền" dropdown shows
+ *          "Cash (Remain $150.00)" (expected "Tiền mặt (Còn lại $150.00)"). "Cash"
+ *          hides behind the parenthetical-money rule and "Remain" was not in the
+ *          dictionary, so the dropdown options are scanned with a targeted
+ *          payment-method detector.
  *
  * All triggers were verified live via MCP Playwright (2026-07-02). Each lists
  * several fallbacks (EN label → VN label → structural) because the app is in
@@ -311,7 +323,13 @@ export async function scanOrderHistoryDatePicker(
  * is silently skipped. `sub` lists nested triggers reachable INSIDE the opened
  * dialog (e.g. the Receipt's "Gửi SMS" / "Gửi Email").
  */
-const DETAIL_DIALOGS: { name: string; open: RegExp; sub?: { name: string; open: RegExp }[] }[] = [
+const DETAIL_DIALOGS: {
+  name: string;
+  open: RegExp;
+  sub?: { name: string; open: RegExp }[];
+  /** After opening, also open + scan the "Phương thức hoàn tiền" dropdown (VP-2312). */
+  methodDropdown?: boolean;
+}[] = [
   // Adjust tip ("Chỉnh tip") — unsettled orders. Verified translated.
   { name: 'Lịch sử đơn · Chỉnh tip (Adjust tip)', open: /chỉnh tip|adjust tip/i },
   // Reopen order ("Mở lại đơn hàng") — unsettled orders. Verified translated.
@@ -330,9 +348,116 @@ const DETAIL_DIALOGS: { name: string; open: RegExp; sub?: { name: string; open: 
       { name: 'Lịch sử đơn · Hoá đơn › Gửi Email', open: /gửi email|send email/i },
     ],
   },
-  // Refund ("Hoàn tiền") — settled orders. Verified fully translated.
-  { name: 'Lịch sử đơn · Hoàn tiền (Refund)', open: /hoàn tiền|refund/i },
+  // Refund ("Hoàn tiền") — settled orders. Dialog shell is translated, BUT its
+  // "Phương thức hoàn tiền" dropdown still lists English methods
+  // "Cash (Remain $150.00)" (VP-2312) — scanned via methodDropdown below.
+  { name: 'Lịch sử đơn · Hoàn tiền (Refund)', open: /hoàn tiền|refund/i, methodDropdown: true },
 ];
+
+/** Vietnamese diacritics test (mirrors the one inside detectScope) — used by the
+ *  targeted refund-method detector, which runs in its own page.evaluate. */
+const VIET_DIACRITICS_SRC = '[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]';
+
+/**
+ * VP-2312 — with the Refund dialog already open, open its "Phương thức hoàn tiền"
+ * dropdown and flag any option still in English ("Cash (Remain $150.00)" →
+ * expected "Tiền mặt (Còn lại $150.00)"). The generic detector can't see these:
+ * "Cash"/"Card" hide behind the parenthetical-money rule and the remaining
+ * balance uses "Remain", so this scans the option list with a TARGETED
+ * payment-method matcher. Best-effort — a dropdown that won't open is recorded
+ * `reachable:false` and never fails the gate.
+ */
+async function scanRefundMethod(
+  page: Page,
+  record: (scan: RouteScan) => Promise<void>,
+): Promise<void> {
+  const route = '/order-history ▸ Hoàn tiền › Phương thức hoàn tiền';
+  const name = 'Lịch sử đơn · Hoàn tiền › Phương thức hoàn tiền (VP-2312)';
+  try {
+    // The refund-method control is a combobox/select whose placeholder is
+    // "Chọn phương thức thanh toán để hoàn". Try combobox → labelled button.
+    const dialog = page.locator(DIALOG_SELECTOR).last();
+    const trigger = dialog
+      .getByRole('combobox')
+      .first()
+      .or(
+        dialog
+          .getByRole('button', {
+            name: /chọn phương thức thanh toán để hoàn|phương thức hoàn tiền|refund method|chọn phương thức/i,
+          })
+          .first(),
+      )
+      // `.or()` can match both the combobox and the button — pin to one so
+      // click()/isVisible() never trip Playwright strict mode.
+      .first();
+    if (!(await trigger.isVisible().catch(() => false))) {
+      await record({
+        ui: [],
+        aria: [],
+        overflow: [],
+        stub: false,
+        path: '/order-history',
+        route,
+        name,
+        group: 'POS',
+        redirected: true,
+        popup: true,
+        reachable: false,
+        error: 'Dropdown "Phương thức hoàn tiền" không mở được (đơn không ở trạng thái hoàn tiền).',
+      });
+      return;
+    }
+    await trigger.click().catch(() => {});
+    await page.waitForTimeout(600);
+
+    // Options render either in a Radix listbox (`[role=option]`) or inside the
+    // dialog itself. Collect leaf texts and flag those that still name an English
+    // payment method / balance term (skipping anything with VN diacritics).
+    const hits = await page.evaluate(
+      ({ vietSrc }) => {
+        const norm = (s: string | null): string => (s || '').replace(/\s+/g, ' ').trim();
+        const viet = new RegExp(vietSrc, 'i');
+        // Payment methods (Cash/Card/Gift Card/Other/Check) + the balance
+        // annotation words the app leaves in English ("Remain(ing)/Received/Change").
+        const en = /\b(Cash|Card|Gift Card|Other|Check|Remain|Remaining|Received|Change)\b/;
+        const box =
+          [...document.querySelectorAll('[role="listbox"]')].pop() ||
+          [...document.querySelectorAll('[role="dialog"],[role="alertdialog"]')].pop();
+        if (!box) return [] as string[];
+        const found = new Set<string>();
+        box.querySelectorAll('*').forEach((e) => {
+          if (e.children.length) return; // leaf elements only
+          const host = (e.closest('[role="option"],li,button') as Element | null) || e;
+          const t = norm(host.textContent);
+          if (!t || viet.test(t)) return;
+          if (en.test(t)) found.add(t.length > 60 ? t.slice(0, 60) + '…' : t);
+        });
+        return [...found];
+      },
+      { vietSrc: VIET_DIACRITICS_SRC },
+    );
+
+    await record({
+      ui: hits,
+      aria: [],
+      overflow: [],
+      stub: false,
+      path: '/order-history',
+      route,
+      name,
+      group: 'POS',
+      redirected: false,
+      popup: true,
+      reachable: true,
+    });
+    // Close just the dropdown (Escape) so the parent Refund dialog stays open for
+    // the caller's dismiss().
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(250);
+  } catch {
+    /* refund-method dropdown unavailable — skip */
+  }
+}
 
 /**
  * Open the first order's detail panel, scan it, then open / scan / close each
@@ -357,12 +482,20 @@ export async function scanOrderHistoryDetail(
     // 1) The detail panel body. `detectScope` on `main` covers the panel plus the
     //    list (list card text lives in the order-history data zone → skipped),
     //    catching detail leaks like "Amount: $44.00".
+    const detail = await page.evaluate(detectScope, {
+      rootSelector: 'main',
+      dataZones: DATA_ZONE_SELECTORS,
+      dataValues: DATA_VALUES,
+    });
+    // 1b) VP-2313 — English date/time the generic detector skips as DATA:
+    //     "Cập nhật cuối: Jun 30, 2026 03:58 AM" in the panel and the list's
+    //     day-group headers ("Jul 1, 2026"). Shared targeted matcher (abbrev
+    //     month + year, or a HH:MM AM/PM time), leaf-scoped and data-zone-aware so
+    //     it never fires on merchant catalog text. Merged into the panel's `ui`.
+    const dateHits = await detectEnDateTimeHits(page, 'main', DATA_ZONE_SELECTORS);
     await record({
-      ...(await page.evaluate(detectScope, {
-        rootSelector: 'main',
-        dataZones: DATA_ZONE_SELECTORS,
-        dataValues: DATA_VALUES,
-      })),
+      ...detail,
+      ui: [...new Set([...detail.ui, ...dateHits])],
       route: '/order-history ▸ chi tiết đơn',
       name: 'Lịch sử đơn · Chi tiết đơn',
       group: 'POS',
@@ -420,6 +553,10 @@ export async function scanOrderHistoryDetail(
             /* this sub-dialog couldn't be opened — skip */
           }
         }
+
+        // Refund dialog only: also open + scan the "Phương thức hoàn tiền"
+        // dropdown, whose options are still English (VP-2312).
+        if (def.methodDropdown) await scanRefundMethod(page, record);
 
         await dismiss(page);
       } catch {

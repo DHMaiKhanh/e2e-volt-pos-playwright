@@ -1,18 +1,20 @@
 ---
-title: Kết quả quét Tiếng Việt — Thông tin doanh nghiệp
-screen: settings-business
-route: /settings/business
+title: settings-services — Tài liệu hợp nhất (i18n; feature/testcase bổ sung sau)
+screen: settings-services
+route: /settings/services
 scanned-at: 2026-07-06
 source: compare.json + compare.html (TC-i18n-screen-compare, quét sau khi cuộn hết trang)
 ---
 
-# Thông tin doanh nghiệp — Quét Tiếng Việt / UI vỡ / dịch đúng chuẩn
+# Dịch vụ & Sản phẩm — Quét Tiếng Việt / UI vỡ / dịch đúng chuẩn
+
+> **Tài liệu hợp nhất (1 file/màn).** Hiện mới có **PHẦN i18n** (quét Tiếng Việt + nghĩa). Đặc tả tính năng & test case sẽ bổ sung vào chính file này khi chạy skill 1/2. Luồng code-gen (nếu có) giữ riêng ở codegen-flow/ + codegen-detail/. Kết quả HTML: reports/settings-services/settings-services.html.
 
 ## Tổng quan
 
-> **Chuỗi UI đối chiếu 70** · ❌ chưa dịch **0** · ⚠️ sai chuẩn **0** · 📐 UI vỡ **0** · ✅ thuật ngữ đúng **70** · (data bỏ qua: 2 · tổng pair 89)
+> **Chuỗi UI đối chiếu 30** · ❌ chưa dịch **0** · ⚠️ sai chuẩn **0** · 📐 UI vỡ **1** · ✅ thuật ngữ đúng **30** · (data bỏ qua: 2 · tổng pair 37)
 > Quét EN↔VI **sau khi cuộn hết trang** (`scrollThroughPage`). 🎉 **Không còn tiếng Anh & không sai chuẩn** trên view mặc định.
-> Report trực quan: `reports/settings-business/compare.html`
+> Report trực quan: `reports/settings-services/compare.html`
 
 ## 1. ❌ Chưa dịch (còn tiếng Anh)
 
@@ -20,11 +22,11 @@ source: compare.json + compare.html (TC-i18n-screen-compare, quét sau khi cuộ
 
 ## 2. ⚠️ Dịch chưa đúng chuẩn
 
-> Không có. 70/70 thuật ngữ khớp glossary (view mặc định).
+> Không có. 30/30 thuật ngữ khớp glossary (view mặc định).
 
 ## 3. 📐 Vỡ giao diện (chỉ báo cáo)
 
-> Không phát hiện: `xOverflow = 0px`, không có chuỗi bị cắt (`clipped = []`).
+> ⚠️ Có **1** chuỗi bị cắt nhẹ (ellipsis, chỉ báo cáo): `Cập nhật`. `xOverflow = 0px` (không tràn ngang).
 
 ## 4. ✅ Đã dịch đúng (mẫu)
 
@@ -46,5 +48,5 @@ source: compare.json + compare.html (TC-i18n-screen-compare, quét sau khi cuộ
 
 ## 6. Nguồn tham chiếu
 
-- HTML: `reports/settings-business/compare.html` · JSON: `reports/settings-business/compare.json`
-- Glossary/registry: [src/utils/i18nCompare.ts](../../src/utils/i18nCompare.ts) (`SCREENS['settings-business']`)
+- HTML: `reports/settings-services/compare.html` · JSON: `reports/settings-services/compare.json`
+- Glossary/registry: [src/utils/i18nCompare.ts](../../src/utils/i18nCompare.ts) (`SCREENS['settings-services']`)

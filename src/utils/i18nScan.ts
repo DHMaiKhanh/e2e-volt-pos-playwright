@@ -30,9 +30,11 @@ export const STATIC_ROUTES: RouteDef[] = [
   { path: '/order-pending', name: 'Đơn đang chờ', group: 'POS' },
   { path: '/order-history', name: 'Lịch sử đơn hàng', group: 'POS' },
   { path: '/appointment', name: 'Lịch hẹn', group: 'POS' },
+  { path: '/incomes', name: 'Báo cáo thu nhập (index)', group: 'Incomes' },
   { path: '/incomes/income-daily', name: 'Thu nhập theo ngày', group: 'Incomes', gated: true },
   { path: '/incomes/income-summary', name: 'Tổng hợp thu nhập', group: 'Incomes', gated: true },
   { path: '/incomes/income-staff', name: 'Thu nhập nhân viên', group: 'Incomes', gated: true },
+  { path: '/settings', name: 'Cài đặt (index)', group: 'Settings' },
   { path: '/settings/business', name: 'Thông tin doanh nghiệp', group: 'Settings' },
   { path: '/settings/services', name: 'Dịch vụ & Sản phẩm', group: 'Settings' },
   { path: '/settings/staffs', name: 'Nhân viên', group: 'Settings' },
@@ -260,6 +262,8 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'pay', // "Pay 1"/"Pay 2" payout rows still English (VP-2253)
     'cash',
     'card',
+    'check', // split-order "Check 1/2/3" tabs & summary still English (VP-2290/2291/2292)
+    'checks',
     'discount',
     'refund',
     'quantity',
@@ -310,6 +314,7 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'confirm',
     'apply',
     'select',
+    'enter', // "No, enter again" customer-display phone confirm (VP-2302)
     'filter',
     'status',
     'active',
@@ -343,6 +348,8 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'available',
     'collected',
     'redemption',
+    'promotion', // customer-display / order shows "Promotion" line (VP-2302)
+    'promotions',
     'method',
     'overview',
     'clean',
@@ -352,6 +359,8 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'void',
     'complete',
     'completed',
+    'finished', // "Check-in hôm nay" card status still English "Completed"/"Finished" (VP-2322)
+    'closed', // work-hours OFF day shows the raw "Closed" (VP-2274)
     'unsettled',
     'successful',
     'refunded',
@@ -362,6 +371,11 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'default',
     'address',
     'email',
+    'phone', // "...Is this your phone number?" customer-display confirm (VP-2302)
+    'message', // "Text Message" send-receipt button, Payment Complete display (VP-2304)
+    'terms', // "By proceeding, you agree to Terms and Privacy Policy" — Add Tip (VP-2303)
+    'privacy',
+    'policy',
     'note',
     'description',
     'category',
@@ -373,6 +387,8 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'tendered',
     'change',
     'received',
+    'remain', // refund-method dropdown "Cash (Remain $150.00)" — remaining balance (VP-2312)
+    'remaining',
     'got',
     'minimum',
     'maximum',
@@ -381,6 +397,8 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'custom',
     'manager',
     'owner',
+    'partner', // staff role "Vai trò nhân viên" dropdown / role column headers (VP-2272/2279/2280)
+    'partners',
     'admin',
     'password',
     'passcode',
@@ -400,6 +418,11 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'online',
     'offline',
     'sync',
+    'setup', // device sync screen "Finishing setup..." (VP-2243)
+    'waiting', // "Waiting for device approval from portal..." (VP-2243)
+    'approval',
+    'approve',
+    'portal',
     'retry',
     'please',
     'printer',
@@ -415,12 +438,38 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'welcome',
     'equally',
     'dialog',
+    'dialogs', // /cash-drawer showcase group heading "Dialogs" (VP-2284)
+    'alert', // /cash-drawer showcase group heading "Alerts" (VP-2284)
+    'alerts',
     'equal',
     'points', // loyalty term — leaks as "Current points:" on the order receipt
     'visit', // "Total visit:" on the order receipt
+    // Card-payment terminal flow on the Order Page (/order/$id) — the tip /
+    // signature / "Getting ready to charge" / "Payment Successfully" / "Total
+    // Amount" + "Processing" screens shown during a real card transaction
+    // (VP-2315…VP-2321). "Total Amount"/"Tip"/"Processing" are caught by the
+    // 'total'/'amount'/'tip'/'processing' dict words above; the reader prompts
+    // "PRESENT CARD" / "CARD READ OK, REMOVE CARD" are ALL-CAPS multiword so they
+    // slip past the dictionary and are caught by `forceEnglish` below instead.
+    'present', // "PRESENT CARD" in non-caps contexts + present-card copy (VP-2320/VP-2316/VP-2321)
+    'sign', // "Sign here" on the Add Signature screen (VP-2317)
+    'signature', // "Add Signature" (VP-2317)
+    'transaction', // "Transaction approved. Please sign your name." (VP-2317)
+    'getting', // "Getting ready to charge" waiting popup (VP-2319/VP-2320)
+    'ready',
+    'successfully', // "Payment Successfully" success popup (VP-2318)
   ]);
   // Exact-string false positives to never flag.
   const fpExact = new Set(['In', 'English']);
+  // Hardcoded-English phrases the data heuristics would otherwise skip, all
+  // always flagged:
+  //   - "WELCOME TO [merchant]" — ALL-CAPS reads as a catalog name, mixed-case
+  //     "Welcome to X" reads as a ≥3-word proper name (VP-2285/VP-2282).
+  //   - The card-reader terminal prompts "PRESENT CARD" / "CARD READ OK, REMOVE
+  //     CARD" on the card-payment flow — ALL-CAPS multiword, so looksLikeData
+  //     treats them as catalog names (VP-2320/VP-2316).
+  const forceEnglish =
+    /^welcome to\b|\b(present|insert|tap|swipe) card\b|\bcard read\b|\bremove card\b/i;
 
   // A string is DATA (merchant catalog/name/log), not a UI label, when it looks
   // like: an exact data value, a date, a count badge ("3 Services"), an ALL-CAPS
@@ -452,6 +501,7 @@ export function detectScope(opts: DetectOpts): RawDetect {
   const isEnglish = (t: string): boolean => {
     if (fpExact.has(t)) return false;
     if (viet.test(t)) return false;
+    if (forceEnglish.test(t)) return true; // known hardcoded-EN phrase (WELCOME TO …)
     const tokens = t.toLowerCase().match(/[a-z]+/g) || [];
     const dictCount = tokens.filter((x) => ui.has(x)).length;
     if (dictCount === 0) return false;
@@ -619,6 +669,59 @@ export async function detectToasts(page: Page): Promise<RawDetect> {
     dataZones: DATA_ZONE_SELECTORS,
     dataValues: DATA_VALUES,
   });
+}
+
+/**
+ * English abbreviated-month date OR a 12-hour AM/PM time — the date/time shape
+ * the app renders UNLOCALIZED in several places the generic detector deliberately
+ * skips (a bare date is treated as merchant DATA):
+ *   • Order-history detail panel + day-group headers — "Cập nhật cuối: Jun 30,
+ *     2026 03:58 AM" / "Jul 1, 2026" (VP-2313).
+ *   • Home order panel "Giờ hẹn" line — "Jul 7, 2026 03:00 AM" (VP-2323).
+ *   • Business Info payroll period / working hours — "Jul 01 - Jul 10, 2026",
+ *     "Áp dụng từ Jul 11, 2026", "09:00 AM - 05:00 PM" (VP-2325).
+ * Requires date CONTEXT (abbrev month + year, OR a HH:MM AM/PM time) so it never
+ * fires on a stray "May"/"Mar" inside merchant catalog text. Same bug class as
+ * the react-day-picker grid (VP-2198).
+ */
+export const EN_DATETIME =
+  /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\b\.?\s+\d{1,2},?\s+\d{4}|\b\d{1,2}:\d{2}\s*(?:AM|PM)\b/;
+
+/**
+ * Collect leaf-node texts under `containerSelector` (last match wins) that carry
+ * an English date/time ({@link EN_DATETIME}) the generic detector skips as DATA.
+ * Data-zone aware (merchant cards excluded) and leaf-scoped so it never fires on
+ * catalog text. Returns the deduped, length-capped strings, to be merged into a
+ * scan's `ui`. Never throws — returns [] on any failure.
+ */
+export async function detectEnDateTimeHits(
+  page: Page,
+  containerSelector = 'main',
+  dataZones: string[] = DATA_ZONE_SELECTORS,
+): Promise<string[]> {
+  try {
+    return await page.evaluate(
+      ({ dateSrc, zones, sel }) => {
+        const re = new RegExp(dateSrc);
+        const norm = (s: string | null): string => (s || '').replace(/\s+/g, ' ').trim();
+        const zoneSel = zones.join(',');
+        const containers = Array.from(document.querySelectorAll(sel));
+        const root =
+          (containers[containers.length - 1] as HTMLElement | undefined) || document.body;
+        const found = new Set<string>();
+        root.querySelectorAll('*').forEach((e) => {
+          if (e.children.length) return; // leaf elements only
+          if (zoneSel && e.closest(zoneSel)) return; // merchant data (cards)
+          const t = norm(e.textContent);
+          if (t && re.test(t)) found.add(t.length > 60 ? t.slice(0, 60) + '…' : t);
+        });
+        return [...found];
+      },
+      { dateSrc: EN_DATETIME.source, zones: dataZones, sel: containerSelector },
+    );
+  } catch {
+    return [];
+  }
 }
 
 /** Switch the app to Tiếng Việt via Settings → Language (real UI click). */

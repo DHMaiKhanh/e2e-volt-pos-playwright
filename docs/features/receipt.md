@@ -1,5 +1,5 @@
 ---
-title: Kết quả quét Tiếng Việt — Hóa đơn (mẫu in)
+title: receipt — Tài liệu hợp nhất (i18n; feature/testcase bổ sung sau)
 screen: receipt
 route: /settings/receipt
 scanned-at: 2026-07-06
@@ -7,6 +7,8 @@ source: compare.json + compare.html (TC-i18n-screen-compare, quét sau khi cuộ
 ---
 
 # Hóa đơn (mẫu in) — Quét Tiếng Việt / UI vỡ / dịch đúng chuẩn
+
+> **Tài liệu hợp nhất (1 file/màn).** Hiện mới có **PHẦN i18n** (quét Tiếng Việt + nghĩa). Đặc tả tính năng & test case sẽ bổ sung vào chính file này khi chạy skill 1/2. Luồng code-gen (nếu có) giữ riêng ở codegen-flow/ + codegen-detail/. Kết quả HTML: reports/receipt/receipt.html.
 
 ## Tổng quan
 

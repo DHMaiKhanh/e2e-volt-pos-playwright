@@ -152,8 +152,13 @@ ${rows}
 };
 
 /**
- * Write <slug>-scan.{html,json} under reports/<slug>/ and return their paths.
- * `slug` is the folder + file stem, e.g. "order-pending".
+ * Write the suite result under reports/<slug>/ and return the paths.
+ *
+ * Luồng hợp nhất: mặc định CHỈ ghi `<slug>-scan.json` (dữ liệu). Kết quả HTML
+ * DUY NHẤT của màn là `reports/<slug>/<slug>.html` render từ master .md
+ * (scripts/build-screen-report.mjs) — nên bản `<slug>-scan.html` rời chỉ ghi khi
+ * `SUITE_HTML=1` (khi cần xem ảnh chụp từng check). `html` vẫn được trả về để
+ * đính vào Playwright report.
  */
 export const writeCheckReport = (
   slug: string,
@@ -165,7 +170,9 @@ export const writeCheckReport = (
   const html = renderCheckReport(results, meta);
   const htmlPath = path.join(outDir, `${slug}-scan.html`);
   const jsonPath = path.join(outDir, `${slug}-scan.json`);
-  writeFileSync(htmlPath, html, 'utf8');
+  if (process.env.SUITE_HTML === '1') {
+    writeFileSync(htmlPath, html, 'utf8');
+  }
   // Strip the (large) base64 screenshots from the JSON — keep it lean. The
   // HTML report is where images live; JSON keeps a boolean marker instead.
   const leanResults = results.map(({ shot, ...r }) => ({ ...r, hasShot: !!shot }));
