@@ -1,6 +1,5 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
-import { SERVICES } from '@data/static/services';
 
 test.describe(`Orders — delete order ${Tag.REGRESSION}`, () => {
   test.beforeEach(async ({ homePage }) => {
@@ -9,7 +8,7 @@ test.describe(`Orders — delete order ${Tag.REGRESSION}`, () => {
 
   test('deletes an order before payment', async ({ homePage, page }) => {
     await homePage.selectAnyStaff();
-    await homePage.selectService(SERVICES.GEL_REMOVAL.name);
+    await homePage.selectAnyService();
 
     await expect(page.getByText(/Order #OD/)).toBeVisible();
 

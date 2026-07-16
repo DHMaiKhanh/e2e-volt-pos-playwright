@@ -338,4 +338,68 @@ export class OrderHistoryPage extends BasePage {
     await this.cancelButton.click();
     await expect(this.anyDialog.last()).toBeVisible();
   }
+
+  // ------------------------------------------------- Split Tip (Order Detail)
+
+  /**
+   * Split Tip action — visible on an order's detail page when it has Tip and
+   * more than 1 staff, per docs/linear/order-flow.md §"Order detail" / Tip:
+   *   Title "Split Tip" · Total Tip · 3 options Split Evenly / Proportion /
+   *   Manual · list of staff · button "Confirm".
+   * NOT independently re-verified live this session (requires a settled,
+   * multi-staff, tipped order) — text captured verbatim from Linear.
+   */
+  get splitTipButton(): Locator {
+    return this.page.getByRole('button', { name: /Split Tip/i });
+  }
+
+  get splitTipDialog(): Locator {
+    return this.page.getByRole('dialog').filter({ hasText: 'Split Tip' });
+  }
+
+  async openSplitTip(): Promise<void> {
+    await this.splitTipButton.click();
+    await expect(this.splitTipDialog).toBeVisible();
+  }
+
+  async chooseSplitTipOption(option: 'Split Evenly' | 'Proportion' | 'Manual'): Promise<void> {
+    await this.splitTipDialog.getByText(option, { exact: true }).click();
+  }
+
+  async confirmSplitTip(): Promise<void> {
+    await this.splitTipDialog.getByRole('button', { name: 'Confirm' }).click();
+  }
+
+  // ------------------------------------------------------------ Reopen Order
+
+  /**
+   * "Continue Re-open" — the label the "Re-open" button switches to once an
+   * order is already mid-reopen (docs/linear/order-flow.md §"Reopen Order").
+   * Not independently re-verified live this session.
+   */
+  get continueReopenButton(): Locator {
+    return this.page.getByRole('button', { name: /Continue Re-?open/i });
+  }
+
+  async openReopenDialogOnly(): Promise<void> {
+    await this.reopenButton.click();
+    await expect(this.anyDialog.last()).toBeVisible();
+  }
+
+  // --------------------------------------------- Order Detail — status info
+
+  /** Cancel Information block on a Canceled order (Amount/Date/By Staff/Reason). */
+  get cancelInformationSection(): Locator {
+    return this.page.getByText('Cancel Information');
+  }
+
+  /** Refund Information block on a Refunded/Partial Refunded order. */
+  get refundInformationSection(): Locator {
+    return this.page.getByText('Refund Information');
+  }
+
+  /** "Partial Refund" action button (distinct from the full "Refund" button). */
+  get partialRefundButton(): Locator {
+    return this.page.getByRole('button', { name: /Partial Refund/i });
+  }
 }

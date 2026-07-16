@@ -10,6 +10,11 @@ export class HomePage extends BasePage {
   readonly payButton: Locator;
   readonly deleteOrderButton: Locator;
   readonly customerPhoneButton: Locator;
+  readonly quickPayTile: Locator;
+  readonly giftCardTile: Locator;
+  readonly promoRewardsButton: Locator;
+  readonly noteButton: Locator;
+  readonly mergeOrderButton: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -18,6 +23,11 @@ export class HomePage extends BasePage {
     this.payButton = page.getByRole('button', { name: 'Pay' });
     this.deleteOrderButton = page.getByRole('button', { name: 'Delete Order' });
     this.customerPhoneButton = page.getByText('Enter Customer Phone');
+    this.quickPayTile = page.getByRole('heading', { name: 'Quick Pay' });
+    this.giftCardTile = page.getByRole('heading', { name: 'Gift Card' });
+    this.promoRewardsButton = page.getByRole('button', { name: 'Promo & Rewards' });
+    this.noteButton = page.getByRole('button', { name: 'Note', exact: true });
+    this.mergeOrderButton = page.getByRole('button', { name: 'Merge Order' });
   }
 
   async goto(): Promise<void> {
@@ -106,6 +116,21 @@ export class HomePage extends BasePage {
   }
 
   /**
+   * Picks whichever service card the catalogue currently renders first,
+   * instead of a name hard-coded in the test — the seeded service catalogue
+   * can change over time, so pinning tests to one service name makes them
+   * brittle. Returns the picked service's displayed name for later assertions.
+   */
+  async selectAnyService(): Promise<string> {
+    const serviceItem = this.page.getByRole('listitem').first();
+    await serviceItem.waitFor({ state: 'visible' });
+    const serviceName = (await serviceItem.textContent())?.trim() ?? '';
+    await serviceItem.click();
+    await expect(this.payButton).toBeEnabled({ timeout: 10_000 });
+    return serviceName;
+  }
+
+  /**
    * Add a retail product to the order. Products live under the dedicated
    * "Product" catalogue category (separate from service categories) and are
    * filed under the order's "Store" bucket — they are NOT attributed to a
@@ -118,6 +143,22 @@ export class HomePage extends BasePage {
     const productItem = this.page.getByRole('listitem').filter({ hasText: productName }).first();
     await productItem.click();
     await this.waitForOrderCreated();
+  }
+
+  /**
+   * Picks whichever product card the "Product" catalogue currently renders
+   * first, instead of a name hard-coded in the test — the seeded product
+   * catalogue can change over time, so pinning tests to one product name
+   * makes them brittle. Returns the picked product's displayed name.
+   */
+  async selectAnyProduct(): Promise<string> {
+    await this.page.getByRole('heading', { name: 'Product', exact: true }).click();
+    const productItem = this.page.getByRole('listitem').first();
+    await productItem.waitFor({ state: 'visible' });
+    const productName = (await productItem.textContent())?.trim() ?? '';
+    await productItem.click();
+    await this.waitForOrderCreated();
+    return productName;
   }
 
   /**
@@ -168,6 +209,21 @@ export class HomePage extends BasePage {
     // "#OD<date>" form so both are covered. Pending-sidebar cards show the
     // code WITHOUT the leading "#", so this stays scoped to the active order.
     await expect(this.page.getByText(/#OD\d{6}/).first()).toBeVisible({ timeout: 10_000 });
+  }
+
+  /**
+   * Click the icon button in the cart footer that opens Split Order. The
+   * footer renders 3 buttons before "Pay": Print, Split (icon-only, no
+   * accessible name), Pay — matched by position since neither icon exposes
+   * a role name. Waits for the `/split-order` route to confirm navigation.
+   */
+  async openSplitOrder(): Promise<void> {
+    // The split icon sits immediately before the "Pay" button in the cart
+    // footer; select it by its position relative to Pay since the icon-only
+    // button exposes no accessible name.
+    const splitButton = this.payButton.locator('xpath=preceding-sibling::button[1]');
+    await splitButton.click();
+    await this.page.waitForURL(/\/split-order/);
   }
 
   async getOrderNumber(): Promise<string> {

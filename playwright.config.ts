@@ -65,7 +65,17 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: ['**/tests/api/**', '**/tests/regression/i18n/**', '**/*report*/**'],
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
+    },
+    {
+      // i18n scans and report/reconciliation screens are flaky-by-nature
+      // (locale text drift, aggregated numbers) — a retry just re-runs the
+      // same deterministic mismatch, so keep retries off regardless of CI.
+      name: 'no-retry',
       testIgnore: '**/tests/api/**',
+      testMatch: ['**/tests/regression/i18n/**', '**/*report*/**'],
+      retries: 0,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
     },
     {

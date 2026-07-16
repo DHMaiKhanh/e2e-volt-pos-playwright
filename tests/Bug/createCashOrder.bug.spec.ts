@@ -1,8 +1,6 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
-import { SERVICES } from '@data/static/services';
-import { PRODUCTS } from '@data/static/products';
 
 /**
  * BUG REPRO — Pending Orders after a completed cash payment.
@@ -37,14 +35,10 @@ test.describe(`Bug — cash order should leave Pending Orders ${Tag.REGRESSION} 
     paymentSuccessPage,
     orderPendingPage,
   }) => {
-    // Pick catalogue items generically from the DB-sourced static fixtures so
+    // Pick catalogue items generically from whatever the UI renders first, so
     // the test isn't pinned to one specific seeded service/product — any
     // priced service/product reproduces the bug. Staff is whichever card the
     // UI currently shows first, rather than a fixed nickname.
-    const service =
-      Object.values(SERVICES).find((s) => s.priceCents > 0) ?? Object.values(SERVICES)[0];
-    const product =
-      Object.values(PRODUCTS).find((p) => p.priceCents > 0) ?? Object.values(PRODUCTS)[0];
     const customerPhone = '250'; // search fragment for the seeded "UNKNOWN2502" customer
     const tipCents = '2000'; // $20.00
     let orderNumber = '';
@@ -54,11 +48,11 @@ test.describe(`Bug — cash order should leave Pending Orders ${Tag.REGRESSION} 
     });
 
     await test.step('Add a service (so a tip can be collected for the staff)', async () => {
-      await homePage.selectService(service.name);
+      await homePage.selectAnyService();
     });
 
     await test.step('Add a retail product', async () => {
-      await homePage.selectProduct(product.name);
+      await homePage.selectAnyProduct();
     });
 
     await test.step(`Attach a customer by phone "${customerPhone}"`, async () => {

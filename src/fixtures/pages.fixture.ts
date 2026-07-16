@@ -14,6 +14,8 @@ import { BusinessInfoPage } from '@pages/settings/BusinessInfoPage';
 import { LanguageSettingsPage } from '@pages/settings/LanguageSettingsPage';
 import { AppointmentPage } from '@pages/pos/AppointmentPage';
 import { PasscodeDialog } from '@components/modal/PasscodeDialog';
+import { QuickPayDialog } from '@components/modal/QuickPayDialog';
+import { SplitOrderPage } from '@pages/pos/SplitOrderPage';
 
 export interface PagesFixture {
   homePage: HomePage;
@@ -31,6 +33,8 @@ export interface PagesFixture {
   languageSettingsPage: LanguageSettingsPage;
   appointmentPage: AppointmentPage;
   passcodeDialog: PasscodeDialog;
+  quickPayDialog: QuickPayDialog;
+  splitOrderPage: SplitOrderPage;
 }
 
 export const pagesFixture = base.extend<PagesFixture>({
@@ -78,5 +82,11 @@ export const pagesFixture = base.extend<PagesFixture>({
   },
   passcodeDialog: async ({ page }, use) => {
     await use(new PasscodeDialog(page));
+  },
+  quickPayDialog: async ({ page }, use) => {
+    await use(new QuickPayDialog(page));
+  },
+  splitOrderPage: async ({ page }, use) => {
+    await use(new SplitOrderPage(page));
   },
 });

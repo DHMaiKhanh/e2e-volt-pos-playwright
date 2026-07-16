@@ -1,7 +1,6 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
-import { SERVICES } from '@data/static/services';
 import { OTHER_PAYMENT_LABELS } from '@data/static/paymentMethods';
 
 test.describe(`Orders — Other payment method ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => {
@@ -18,7 +17,7 @@ test.describe(`Orders — Other payment method ${Tag.REGRESSION} ${Tag.PAYMENT}`
     }) => {
       await test.step('Build order: staff + single service', async () => {
         await homePage.selectAnyStaff();
-        await homePage.selectService(SERVICES.RED_WHITE_FULL_SET.name);
+        await homePage.selectAnyService();
         await homePage.clickPay();
       });
 
@@ -46,7 +45,7 @@ test.describe(`Orders — Other payment method ${Tag.REGRESSION} ${Tag.PAYMENT}`
     otherPaymentPage,
   }) => {
     await homePage.selectAnyStaff();
-    await homePage.selectService(SERVICES.RED_WHITE_FULL_SET.name);
+    await homePage.selectAnyService();
     await homePage.clickPay();
 
     await expect(otherPaymentPage.methodNameInput).toBeHidden();
@@ -62,8 +61,8 @@ test.describe(`Orders — Other payment method ${Tag.REGRESSION} ${Tag.PAYMENT}`
     paymentSuccessPage,
   }) => {
     await homePage.selectAnyStaff();
-    await homePage.selectService(SERVICES.GEL_REMOVAL.name);
-    await homePage.selectService(SERVICES.WAXING_LIP_CHIN.name);
+    await homePage.selectAnyService();
+    await homePage.selectAnyService();
     await homePage.clickPay();
 
     await otherPaymentPage.addTip('100');
@@ -83,7 +82,7 @@ test.describe(`Orders — Other payment method ${Tag.REGRESSION} ${Tag.PAYMENT}`
     otherPaymentPage,
   }) => {
     await homePage.selectAnyStaff();
-    await homePage.selectService(SERVICES.RED_WHITE_FULL_SET.name);
+    await homePage.selectAnyService();
     await homePage.clickPay();
 
     await otherPaymentPage.selectOther();

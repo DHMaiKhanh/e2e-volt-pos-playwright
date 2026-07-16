@@ -51,7 +51,7 @@ export class CheckoutPage extends BasePage {
 
   async verifyOrderDetails(options: {
     staffName?: string;
-    services?: Array<{ name: string; price: string }>;
+    services?: Array<{ name: string; price?: string }>;
     total?: string;
   }): Promise<void> {
     if (options.staffName) {
@@ -60,7 +60,9 @@ export class CheckoutPage extends BasePage {
     if (options.services) {
       for (const service of options.services) {
         await expect(this.page.getByText(service.name)).toBeVisible();
-        await expect(this.page.getByText(service.price)).toBeVisible();
+        if (service.price) {
+          await expect(this.page.getByText(service.price)).toBeVisible();
+        }
       }
     }
     if (options.total) {

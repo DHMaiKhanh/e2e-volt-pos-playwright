@@ -1,7 +1,6 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
-import { SERVICES } from '@data/static/services';
 
 test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => {
   test.beforeEach(async ({ homePage }) => {
@@ -15,14 +14,16 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
     paymentSuccessPage,
   }) => {
     let staffName = '';
+    let firstServiceName = '';
+    let secondServiceName = '';
 
     await test.step('Select staff member', async () => {
       staffName = await homePage.selectAnyStaff();
     });
 
     await test.step('Add services', async () => {
-      await homePage.selectService(SERVICES.GEL_REMOVAL.name);
-      await homePage.selectService(SERVICES.DIPPING_OMBRE.name);
+      firstServiceName = await homePage.selectAnyService();
+      secondServiceName = await homePage.selectAnyService();
     });
 
     await test.step('Navigate to checkout', async () => {
@@ -32,10 +33,7 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
     await test.step('Verify order details on checkout', async () => {
       await checkoutPage.verifyOrderDetails({
         staffName,
-        services: [
-          { name: SERVICES.GEL_REMOVAL.name, price: SERVICES.GEL_REMOVAL.price },
-          { name: SERVICES.DIPPING_OMBRE.name, price: SERVICES.DIPPING_OMBRE.price },
-        ],
+        services: [{ name: firstServiceName }, { name: secondServiceName }],
       });
     });
 
@@ -70,8 +68,8 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
     paymentSuccessPage,
   }) => {
     await homePage.selectAnyStaff();
-    await homePage.selectService(SERVICES.WAXING_LIP_CHIN.name);
-    await homePage.selectService(SERVICES.SPA_SERVICE.name);
+    await homePage.selectAnyService();
+    await homePage.selectAnyService();
 
     await homePage.clickPay();
 
@@ -94,7 +92,7 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
     paymentSuccessPage,
   }) => {
     await homePage.selectAnyStaff();
-    await homePage.selectService(SERVICES.ACRYLIC_REMOVAL.name);
+    await homePage.selectAnyService();
 
     await homePage.clickPay();
 
