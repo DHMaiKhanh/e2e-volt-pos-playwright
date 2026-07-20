@@ -21,7 +21,7 @@ export class HomePage extends BasePage {
     this.staffSearchInput = page.getByPlaceholder('Search staff');
     this.serviceSearchInput = page.getByPlaceholder('Search service');
     this.payButton = page.getByRole('button', { name: 'Pay' });
-    this.deleteOrderButton = page.getByRole('button', { name: 'Delete Order' });
+    this.deleteOrderButton = page.getByRole('button', { name: 'Remove' });
     this.customerPhoneButton = page.getByText('Enter Customer Phone');
     this.quickPayTile = page.getByRole('heading', { name: 'Quick Pay' });
     this.giftCardTile = page.getByRole('heading', { name: 'Gift Card' });
@@ -44,14 +44,16 @@ export class HomePage extends BasePage {
 
   /** Removes any leftover order from a previous test run. Best-effort, never throws. */
   async cleanupExistingOrder(): Promise<void> {
-    const deleteButton = this.page.getByRole('button', { name: 'Delete Order' });
+    // The order header's whole-order delete affordance is labelled "Remove"
+    // (older builds called it "Delete Order" — see this.deleteOrderButton).
+    const deleteButton = this.deleteOrderButton;
     if (await deleteButton.isVisible({ timeout: 500 }).catch(() => false)) {
       await deleteButton.click();
       const confirmButton = this.page.getByRole('button', { name: /confirm|yes|ok|delete/i });
       if (await confirmButton.isVisible({ timeout: 500 }).catch(() => false)) {
         await confirmButton.click();
       }
-      // Wait for the Delete Order button to disappear — that's the real signal
+      // Wait for the Remove button to disappear — that's the real signal
       // the order has been removed, not a fixed 500ms guess.
       await deleteButton.waitFor({ state: 'hidden', timeout: 2_000 }).catch(() => undefined);
     }
@@ -90,7 +92,10 @@ export class HomePage extends BasePage {
 
     const staffCard = this.page.locator('#home-staff-listing [class*="cursor"]').first();
     await staffCard.waitFor({ state: 'visible' });
-    const staffName = (await staffCard.textContent())?.trim() ?? '';
+    // Read only the name span — the card's full textContent also picks up
+    // "Next appt" / time / appointment-count badge, which pollutes the name
+    // and breaks later `getByText(`Staff: ${name}`)` lookups on Checkout.
+    const staffName = (await staffCard.locator('.truncate').first().textContent())?.trim() ?? '';
     await staffCard.click({ force: true });
     await this.waitForOrderCreated();
     return staffName;
@@ -124,7 +129,11 @@ export class HomePage extends BasePage {
   async selectAnyService(): Promise<string> {
     const serviceItem = this.page.getByRole('listitem').first();
     await serviceItem.waitFor({ state: 'visible' });
-    const serviceName = (await serviceItem.textContent())?.trim() ?? '';
+    // Read only the name span — the card's full textContent also picks up
+    // the trailing price div (e.g. "combo2$20.00"), which pollutes the name
+    // and breaks later `getByText(name)` / `getByText(price)` lookups.
+    const serviceName =
+      (await serviceItem.locator('.truncate').first().textContent())?.trim() ?? '';
     await serviceItem.click();
     await expect(this.payButton).toBeEnabled({ timeout: 10_000 });
     return serviceName;
@@ -168,7 +177,7 @@ export class HomePage extends BasePage {
    */
   async enterCustomerPhone(phoneOrName: string): Promise<void> {
     await this.customerPhoneButton.click();
-    const input = this.page.getByRole('textbox', { name: 'Enter Customer Phone or Name' });
+    const input = this.page.getByRole('textbox', { name: 'Enter Customer Phone, Name or Email' });
     await input.waitFor({ state: 'visible' });
     await input.fill(phoneOrName);
   }

@@ -29,6 +29,8 @@
     "test:e2e": "cross-env ENV=local playwright test tests/e2e",
     "test:orders": "cross-env ENV=local playwright test tests/e2e/orders",
     "test:api": "cross-env ENV=local playwright test --project=api",
+    "auth": "cross-env ENV=local playwright test --project=portal-auth",
+    "test:portal": "cross-env ENV=local playwright test --project=portal",
     "test:bulk": "cross-env ENV=local playwright test tests/regression/orders/bulkCreateOrders.regression.spec.ts",
     "test:headed": "cross-env ENV=local playwright test --headed",
     "test:ui": "cross-env ENV=local playwright test --ui",

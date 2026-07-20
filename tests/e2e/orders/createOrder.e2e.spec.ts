@@ -31,6 +31,7 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
     });
 
     await test.step('Verify order details on checkout', async () => {
+      await checkoutPage.waitForReady();
       await checkoutPage.verifyOrderDetails({
         staffName,
         services: [{ name: firstServiceName }, { name: secondServiceName }],

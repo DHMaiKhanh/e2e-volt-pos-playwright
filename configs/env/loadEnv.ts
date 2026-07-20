@@ -16,6 +16,10 @@ export interface AppEnv {
   OWNER_PASSCODE: string;
 
   LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error';
+
+  // Portal (dev.v2.fastboypay.com) — see tests/portal/README.md
+  PORTAL_BASE_URL: string;
+  PORTAL_STORAGE_STATE: string;
 }
 
 const toBool = (value: string | undefined, fallback = false): boolean => {
@@ -61,6 +65,9 @@ export const loadEnv = (): AppEnv => {
     OWNER_PASSCODE: process.env.OWNER_PASSCODE ?? '8888',
 
     LOG_LEVEL: (process.env.LOG_LEVEL as AppEnv['LOG_LEVEL']) ?? 'info',
+
+    PORTAL_BASE_URL: process.env.PORTAL_BASE_URL ?? 'https://dev.v2.fastboypay.com',
+    PORTAL_STORAGE_STATE: process.env.PORTAL_STORAGE_STATE ?? '.auth/portal-storage-state.json',
   };
 };
 

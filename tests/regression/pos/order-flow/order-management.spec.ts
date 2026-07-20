@@ -28,6 +28,10 @@ test.describe(`Order Flow — Order Management ${Tag.REGRESSION} ${Tag.UI}`, () 
       orderHistoryPage.page.getByRole('checkbox', { name: 'Card', exact: true }),
     ).toBeVisible();
 
+    // The payment-method popover stays open and overlaps the Status trigger
+    // button underneath it — close it first so the next click can land.
+    await orderHistoryPage.page.keyboard.press('Escape');
+
     await orderHistoryPage.openFilterStatuses();
     await expect(
       orderHistoryPage.page.getByRole('checkbox', { name: 'Successful - Settled', exact: true }),

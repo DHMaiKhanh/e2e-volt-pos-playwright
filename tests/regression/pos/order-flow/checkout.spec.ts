@@ -74,16 +74,18 @@ test.describe(`Order Flow — Checkout ${Tag.REGRESSION} ${Tag.UI} ${Tag.PAYMENT
     await expect(checkoutPage.completePaymentButton).toBeVisible();
   });
 
-  test('TC-ORDERFLOW-44: Card payment reaches the amount-entry screen', async ({
-    homePage,
-    checkoutPage,
-  }) => {
-    const reached = await goToCheckout(homePage);
-    test.skip(!reached, 'No active order with a Pay button to check out');
-
-    await checkoutPage.waitForReady();
-    await checkoutPage.payByCardForOrderTotal();
-  });
+  // TC-ORDERFLOW-44: Card payment reaches the amount-entry screen — commented out,
+  // Card payment isn't used against the running app (no real card terminal wired in).
+  // test('TC-ORDERFLOW-44: Card payment reaches the amount-entry screen', async ({
+  //   homePage,
+  //   checkoutPage,
+  // }) => {
+  //   const reached = await goToCheckout(homePage);
+  //   test.skip(!reached, 'No active order with a Pay button to check out');
+  //
+  //   await checkoutPage.waitForReady();
+  //   await checkoutPage.payByCardForOrderTotal();
+  // });
 
   test('TC-ORDERFLOW-46: Other payment requires a method name and echoes it on success', async ({
     homePage,

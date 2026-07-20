@@ -83,6 +83,23 @@ export default defineConfig({
       testDir: './tests/api',
       use: { baseURL: env.BASE_URL },
     },
+    {
+      // Logs into the FASTBOY Portal by hand once (SSO can't be scripted)
+      // and caches the session at PORTAL_STORAGE_STATE. Run via `npm run auth`.
+      name: 'portal-auth',
+      testDir: './tests/portal',
+      testMatch: 'auth.setup.ts',
+      use: { headless: false },
+    },
+    {
+      // Portal specs reuse the session `portal-auth` saved. NOT wired as a
+      // `dependencies` project on purpose — SSO needs a human, so re-auth is
+      // a deliberate `npm run auth`, not something that should fire on every run.
+      name: 'portal',
+      testDir: './tests/portal',
+      testIgnore: 'auth.setup.ts',
+      use: { baseURL: env.PORTAL_BASE_URL, storageState: env.PORTAL_STORAGE_STATE },
+    },
     // Uncomment when cross-browser coverage is needed.
     // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
     // { name: 'webkit',  use: { ...devices['Desktop Safari'] } },
