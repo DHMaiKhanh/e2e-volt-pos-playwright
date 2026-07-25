@@ -306,14 +306,27 @@ export class IncomeSummaryPage extends BasePage {
       title: string;
       rows: Array<{ label: string; value: string; bold: boolean }>;
     }> = [];
+    // Sub-rows (Sale/Refund/Tip/Tax) repeat identically under every payment
+    // category (Cash, Card, Others) — prefix each with its nearest preceding
+    // bold category row so "Sale" under Cash and "Sale" under Card don't
+    // collide when later keyed by label (e.g. in compareRowsList).
+    let currentCategory: string | null = null;
     for (const item of flat) {
-      if (item.kind === 'section') sections.push({ title: item.title as string, rows: [] });
-      else if (sections.length)
-        sections[sections.length - 1].rows.push({
-          label: item.label as string,
-          value: item.value as string,
-          bold: !!item.bold,
-        });
+      if (item.kind === 'section') {
+        sections.push({ title: item.title as string, rows: [] });
+        currentCategory = null;
+        continue;
+      }
+      if (!sections.length) continue;
+      const bold = !!item.bold;
+      if (bold) currentCategory = item.label as string;
+      const label =
+        !bold && currentCategory ? `${currentCategory} — ${item.label}` : (item.label as string);
+      sections[sections.length - 1].rows.push({
+        label,
+        value: item.value as string,
+        bold,
+      });
     }
     return sections;
   }
