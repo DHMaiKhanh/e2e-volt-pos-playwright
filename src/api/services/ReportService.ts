@@ -41,6 +41,10 @@ const STORE_DAILY_INCOME_QUERY = `
   }
 `;
 
+// FAIL (api): backend no longer exposes `storeDailyIncomeLive` — GraphQL returns
+// "Unknown field \"storeDailyIncomeLive\" on type \"Query\"". Schema suggests
+// `reportLiveStoreDailyIncomeList` as the replacement. Breaks getDailyIncome()
+// for "today", and cascades into IncomeSummaryService.getOverview().
 const STORE_DAILY_INCOME_LIVE_QUERY = `
   query storeDailyIncomeLive($reportDate: String!) {
     storeDailyIncomeLive(reportDate: $reportDate) {
@@ -70,6 +74,9 @@ const STORE_DAILY_INCOME_LIVE_QUERY = `
  * the app — they are real-time and only meaningful for *today*. Each takes the
  * same `reportDate` (a full RFC3339 timestamp = start of merchant-local day).
  */
+// FAIL (api): `storeDailyIncomeOrdersLive` no longer exists on the backend
+// schema — GraphQL suggests `reportLiveStoreDailyIncomeOrderList` instead.
+// Breaks getDailyIncomeOrders().
 const STORE_DAILY_INCOME_ORDERS_LIVE_QUERY = `
   query storeDailyIncomeOrdersLive($reportDate: String!) {
     storeDailyIncomeOrdersLive(reportDate: $reportDate) {
@@ -117,6 +124,10 @@ const STAFF_DAILY_INCOME_LIST_SETTLED_QUERY = `
   }
 `;
 
+// FAIL (api): `staffDailyIncomeListLive` no longer exists on the backend
+// schema — GraphQL suggests `reportStaffDailyIncomeList` (settled) as the
+// closest match; there is no live per-staff list field anymore. Breaks
+// getStaffDailyIncomeList().
 const STAFF_DAILY_INCOME_LIST_LIVE_QUERY = `
   query staffDailyIncomeListLive($reportDate: String!) {
     staffDailyIncomeListLive(reportDate: $reportDate) {
@@ -139,6 +150,9 @@ const STAFF_DAILY_INCOME_LIST_LIVE_QUERY = `
   }
 `;
 
+// FAIL (api): `staffDailyIncomeOrdersLive` no longer exists on the backend
+// schema — GraphQL suggests `reportLiveStaffDailyIncomeOrderList` instead.
+// Breaks getStaffDailyIncomeOrders().
 const STAFF_DAILY_INCOME_ORDERS_LIVE_QUERY = `
   query staffDailyIncomeOrdersLive($reportDate: String!) {
     staffDailyIncomeOrdersLive(reportDate: $reportDate) {

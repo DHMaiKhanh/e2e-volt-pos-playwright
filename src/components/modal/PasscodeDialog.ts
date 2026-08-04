@@ -7,11 +7,13 @@ export class PasscodeDialog extends BaseComponent {
 
   constructor(page: Page) {
     // Use a regex so trivial whitespace differences in the dialog title
-    // don't make the locator miss.
-    const dialog = page.getByRole('dialog', { name: /Enter your passcode/i });
+    // don't make the locator miss. Volt POS renders either a generic
+    // "Enter your passcode" title or a per-screen "Enter staff code to
+    // access <screen>" title depending on the gate — match both.
+    const dialog = page.getByRole('dialog', { name: /Enter (your passcode|staff code)/i });
     super(page, dialog);
     this.dialog = dialog;
-    this.heading = page.getByRole('heading', { name: /Enter your passcode/i });
+    this.heading = page.getByRole('heading', { name: /Enter (your passcode|staff code)/i });
   }
 
   async waitForVisible(timeout = 10_000): Promise<void> {

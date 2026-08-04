@@ -90,6 +90,10 @@ const OVERVIEW_FIELDS = `
   incomeSummaryPaymentAmountCollected
 `;
 
+// FAIL (api): `storeDailyIncomeLive` no longer exists on the backend schema —
+// GraphQL returns "Unknown field \"storeDailyIncomeLive\" on type \"Query\"".
+// Same root cause as ReportService's STORE_DAILY_INCOME_LIVE_QUERY. Breaks
+// getDetail()/getOverview()/getStaffCardFeeCharge() whenever `date` is today.
 const DETAIL_LIVE_QUERY = `
   query getIncomeSummaryDetailLive($reportDate: String!) {
     storeDailyIncomeLive(reportDate: $reportDate) { ${DETAIL_FIELDS} }

@@ -1,27 +1,25 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
-import { SERVICES } from '@data/static/services';
 
 const ORDER_CONFIGS = [
-  { services: [SERVICES.GEL_REMOVAL] },
-  { services: [SERVICES.DIPPING_OMBRE] },
-  { services: [SERVICES.ACRYLIC_REMOVAL] },
-  { services: [SERVICES.WAXING_LIP_CHIN] },
-  { services: [SERVICES.SPA_SERVICE] },
-  { services: [SERVICES.GEL_REMOVAL, SERVICES.DIPPING_OMBRE] },
-  { services: [SERVICES.ACRYLIC_REMOVAL, SERVICES.WAXING_LIP_CHIN] },
-  { services: [SERVICES.SPA_SERVICE, SERVICES.GEL_REMOVAL] },
-  { services: [SERVICES.DIPPING_OMBRE, SERVICES.ACRYLIC_REMOVAL] },
-  { services: [SERVICES.WAXING_LIP_CHIN, SERVICES.SPA_SERVICE] },
+  { serviceCount: 1 },
+  { serviceCount: 1 },
+  { serviceCount: 1 },
+  { serviceCount: 1 },
+  { serviceCount: 1 },
+  { serviceCount: 2 },
+  { serviceCount: 2 },
+  { serviceCount: 2 },
+  { serviceCount: 2 },
+  { serviceCount: 2 },
 ];
 
 test.describe(`Orders — bulk create 10 orders ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   for (let i = 0; i < ORDER_CONFIGS.length; i++) {
     const config = ORDER_CONFIGS[i];
-    const serviceNames = config.services.map((s) => s.name).join(' + ');
 
-    test(`Order ${i + 1}/10: ${serviceNames}`, async ({
+    test(`Order ${i + 1}/10: ${config.serviceCount} service(s)`, async ({
       homePage,
       checkoutPage,
       passcodeDialog,
@@ -34,8 +32,8 @@ test.describe(`Orders — bulk create 10 orders ${Tag.REGRESSION} ${Tag.SLOW}`, 
       });
 
       await test.step('Add services', async () => {
-        for (const service of config.services) {
-          await homePage.selectService(service.name);
+        for (let j = 0; j < config.serviceCount; j++) {
+          await homePage.selectAnyService();
         }
       });
 

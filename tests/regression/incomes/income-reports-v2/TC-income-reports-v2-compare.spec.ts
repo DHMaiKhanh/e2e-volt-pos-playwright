@@ -71,8 +71,8 @@ function isoDate(d: Date): string {
 const outDir = path.resolve(__dirname, '../../../../reports/income-reports-v2');
 const partsDir = path.join(outDir, '.parts');
 
-/** Rolling ~30-day window: today and the 29 days before it. */
-const RANGE_DAYS = 30;
+/** Rolling ~60-day window: today and the 59 days before it. */
+const RANGE_DAYS = 60;
 const today = new Date();
 const days: Date[] = Array.from({ length: RANGE_DAYS }, (_, i) => {
   const d = new Date(today);
@@ -97,7 +97,7 @@ test.describe(`Income Reports V2 — V1 vs V2 parity ${Tag.REGRESSION}`, () => {
   }) => {
     // 30 days × 2 SPA reloads (v1 then v2) × a full order-row scrape each —
     // much slower than a single aggregated range, so give it a wide ceiling.
-    test.setTimeout(20 * 60_000);
+    test.setTimeout(40 * 60_000);
     // Clear any stale parts from a previous run — this test always runs
     // first in a full-suite invocation, so it's the right place to reset.
     fs.rmSync(partsDir, { recursive: true, force: true });
@@ -165,7 +165,7 @@ test.describe(`Income Reports V2 — V1 vs V2 parity ${Tag.REGRESSION}`, () => {
     passcodeDialog,
     page,
   }) => {
-    test.setTimeout(20 * 60_000);
+    test.setTimeout(40 * 60_000);
 
     const summaryV2 = new IncomeSummaryPage(page, 'v2');
 
@@ -242,7 +242,7 @@ test.describe(`Income Reports V2 — V1 vs V2 parity ${Tag.REGRESSION}`, () => {
     passcodeDialog,
     page,
   }) => {
-    test.setTimeout(20 * 60_000);
+    test.setTimeout(40 * 60_000);
 
     const statNames = [
       'Total staff',
