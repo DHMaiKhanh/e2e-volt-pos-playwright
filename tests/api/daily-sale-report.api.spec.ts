@@ -18,6 +18,13 @@ import type { StoreDailyIncomeRow } from '@api/models/Report';
  * `src-tauri/src/graphql/report.rs`), so the suite is stable against whatever
  * the environment seeded for today. Reconciliations that need real money are
  * guarded with `test.skip` when today is empty.
+ *
+ * FAIL (api): as of this writing, ALL 13 tests in this file fail — the backend
+ * no longer exposes any of the four "live today" fields above. GraphQL errors
+ * with "Unknown field ... on type \"Query\"" for each, suggesting renamed
+ * replacements (`reportLiveStoreDailyIncomeList`, `reportLiveStoreDailyIncomeOrderList`,
+ * `reportStaffDailyIncomeList`, `reportLiveStaffDailyIncomeOrderList`). See the
+ * matching comments on each query constant in `src/api/services/ReportService.ts`.
  */
 
 /** Every money value the report returns is an integer number of cents. */

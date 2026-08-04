@@ -131,9 +131,11 @@ export class HomePage extends BasePage {
     await serviceItem.waitFor({ state: 'visible' });
     // Read only the name span — the card's full textContent also picks up
     // the trailing price div (e.g. "combo2$20.00"), which pollutes the name
-    // and breaks later `getByText(name)` / `getByText(price)` lookups.
-    const serviceName =
-      (await serviceItem.locator('.truncate').first().textContent())?.trim() ?? '';
+    // and breaks later `getByText(name)` / `getByText(price)` lookups. The
+    // name span used to carry a `.truncate` class but service-items.tsx now
+    // renders it as `.wrap-break-word` instead, so target the first `span`
+    // in the card (the price is a plain `div`, not a `span`).
+    const serviceName = (await serviceItem.locator('span').first().textContent())?.trim() ?? '';
     await serviceItem.click();
     await expect(this.payButton).toBeEnabled({ timeout: 10_000 });
     return serviceName;

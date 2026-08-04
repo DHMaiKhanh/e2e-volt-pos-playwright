@@ -35,6 +35,9 @@ const expectCents = (label: string, value: number): void => {
 test.describe(`API — Income Summary ${Tag.API} ${Tag.REGRESSION}`, () => {
   // ─── Overview: getIncomeSummary / getIncomeSummaryLive ────────────────────
   test.describe('overview row (table)', () => {
+    // FAIL (api): defaults to today's date → hits the live-report branch, which
+    // queries the removed `storeDailyIncomeLive` GraphQL field. See the comment
+    // on IncomeSummaryService's OVERVIEW_LIVE_QUERY.
     test('returns a row whose money fields are all integer cents', async ({
       incomeSummaryService,
     }) => {
@@ -60,11 +63,20 @@ test.describe(`API — Income Summary ${Tag.API} ${Tag.REGRESSION}`, () => {
       expect(row, 'overview row exists for the settled day').not.toBeNull();
       if (!row) return;
 
+      // FAIL (api): incomeSummaryTotalPayment does not equal incomeNetTotal +
+      // incomeTaxAmount + incomeTip for the settled day under test (received
+      // 334854, expected 331082) — real backend data mismatch (see the matching
+      // failures on the detail-panel Sale Details tests further down).
       expect(row.incomeSummaryTotalPayment, 'Total Payment = Net Total + Tax + Tip').toBe(
         row.incomeNetTotal + row.incomeTaxAmount + row.incomeTip,
       );
     });
 
+    // FAIL (api): defaults to today's date → IncomeSummaryService.getOverview()
+    // hits the live-report branch, which queries the removed `storeDailyIncomeLive`
+    // GraphQL field (see IncomeSummaryService's OVERVIEW_LIVE_QUERY). Fails with
+    // "Unknown field \"storeDailyIncomeLive\" on type \"Query\"" before any
+    // assertion runs.
     test('Net Total = Subtotal − Total Discount (TC-32)', async ({ incomeSummaryService }) => {
       const row = await incomeSummaryService.getOverview();
       test.skip(row === null, 'No income row for today');
@@ -169,6 +181,9 @@ test.describe(`API — Income Summary ${Tag.API} ${Tag.REGRESSION}`, () => {
       expect(row.incomeTotalDiscount, 'Total Discount = Discount − Discount Reversed').toBe(
         row.incomeDiscount - row.incomeDiscountReversed,
       );
+      // FAIL (api): backend's incomeNetTotal does not equal incomeSubtotal −
+      // incomeTotalDiscount for the settled day under test (received 266286,
+      // expected 247114) — a real backend reconciliation mismatch, not a test bug.
       expect(row.incomeNetTotal, 'Net Total = Subtotal − Total Discount').toBe(
         row.incomeSubtotal - row.incomeTotalDiscount,
       );
@@ -181,6 +196,10 @@ test.describe(`API — Income Summary ${Tag.API} ${Tag.REGRESSION}`, () => {
       test.skip(row === null, 'No settled day with data');
       if (!row) return;
 
+      // FAIL (api): saleIncomeTotalPayment does not equal incomeNetTotal +
+      // incomeTaxAmount + incomeTip for the settled day under test (received
+      // 334854, expected 331082) — same discrepancy family as the Net Total
+      // mismatch above; likely inherited from incomeNetTotal already being wrong.
       expect(row.saleIncomeTotalPayment, 'Sale-side Total Payment = Net Total + Tax + Tip').toBe(
         row.incomeNetTotal + row.incomeTaxAmount + row.incomeTip,
       );
@@ -222,6 +241,9 @@ test.describe(`API — Income Summary ${Tag.API} ${Tag.REGRESSION}`, () => {
       // adds back into the Salon Total (fetched separately — see service).
       const cardFee = await incomeSummaryService.getStaffCardFeeCharge(date);
 
+      // FAIL (api): salonEarningsNet does not equal Commission + ProductSale −
+      // ProductRefund − TotalDiscount for the settled day under test (received
+      // 245732, expected 226560) — real backend reconciliation mismatch.
       expect(
         row.salonEarningsNet,
         'Net = Commission + ProductSale − ProductRefund − Discount',

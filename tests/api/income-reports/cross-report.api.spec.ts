@@ -126,6 +126,10 @@ test.describe(`API — Income Reports cross-report integration ${Tag.API} ${Tag.
         sumBy(ctx.staff, (s) => s.cleanUpFee),
         'Σ Clean Up Fee',
       ).toBe(sp.staffPayoutCleanUpFee);
+      // FAIL (api): Σ per-staff staffSalary does not equal the store-level
+      // staffPayoutSalary for the settled day under test (received 16615,
+      // expected 16231) — real backend reconciliation mismatch between the
+      // per-staff settled report and the Income Summary Staff Payout section.
       expect(
         sumBy(ctx.staff, (s) => s.staffSalary),
         'Σ Staff Salary',
@@ -150,6 +154,10 @@ test.describe(`API — Income Reports cross-report integration ${Tag.API} ${Tag.
       test.skip(ctx.staff.length === 0, 'No per-staff settled income for that day');
 
       const perStaffTotal = sumBy(ctx.staff, (s) => s.pay1 + s.pay2);
+      // FAIL (api): Σ per-staff (Pay 1 + Pay 2) does not equal store-level
+      // staffPayoutTotal for the settled day under test (received 73302,
+      // expected 75210) — same reconciliation family as the Σ Staff Salary
+      // mismatch above.
       expect(perStaffTotal, 'Σ(Pay 1 + Pay 2) == store Total Staff Payout').toBe(
         ctx.isDetail.staffPayoutTotal,
       );
