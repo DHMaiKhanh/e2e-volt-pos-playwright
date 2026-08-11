@@ -33,6 +33,16 @@ export class SplitOrderPage extends BasePage {
   readonly remainingValue: Locator;
   readonly printButton: Locator;
   readonly payButton: Locator;
+  readonly cashDrawerButton: Locator;
+  readonly tipButton: Locator;
+  readonly howToSplitByItemButton: Locator;
+  readonly receiptDetailsHeading: Locator;
+  readonly showMoreButton: Locator;
+  readonly showLessButton: Locator;
+  readonly numpadDoneButton: Locator;
+  readonly numpadBackspaceButton: Locator;
+  readonly tipDialogHeading: Locator;
+  readonly tipDialogAddButton: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -46,6 +56,18 @@ export class SplitOrderPage extends BasePage {
     this.remainingValue = page.getByText('Remaining').locator('..');
     this.printButton = page.getByRole('button', { name: 'Print', exact: true });
     this.payButton = page.getByRole('button', { name: /^Pay \$/ });
+    this.cashDrawerButton = page.getByRole('button', { name: /Cash ?Drawer/i });
+    this.tipButton = page.getByRole('button', { name: 'Tip', exact: true });
+    this.howToSplitByItemButton = page.getByRole('button', {
+      name: 'How to Split Payment by Item?',
+    });
+    this.receiptDetailsHeading = page.getByRole('heading', { name: 'Receipt Details' });
+    this.showMoreButton = page.getByRole('button', { name: 'Show more' });
+    this.showLessButton = page.getByRole('button', { name: 'Show less' });
+    this.numpadDoneButton = page.getByRole('button', { name: 'Done', exact: true });
+    this.numpadBackspaceButton = page.getByRole('button', { name: /backspace/i });
+    this.tipDialogHeading = page.getByText('Enter Amount', { exact: true });
+    this.tipDialogAddButton = page.getByRole('button', { name: 'Add', exact: true });
   }
 
   async waitForReady(): Promise<void> {
@@ -82,8 +104,58 @@ export class SplitOrderPage extends BasePage {
     return this.page.getByRole('button', { name: new RegExp(`Select #.*-${index}$`) });
   }
 
+  /** The "Delete #OD...-<n>" button inside a check card — only rendered when ≥3 checks exist. */
+  checkDeleteButton(index: number): Locator {
+    return this.page.getByRole('button', { name: new RegExp(`Delete #.*-${index}$`) });
+  }
+
+  /** The dollar amount text shown on a check card, e.g. "$606.90". */
+  checkAmountText(index: number): Locator {
+    return this.checkCard(index).getByText(/\$[\d,]+\.\d{2}/);
+  }
+
   async addNewCheck(): Promise<void> {
     await this.addNewCheckButton.click();
+  }
+
+  /** Opens the By Amount numpad dialog by clicking a check's amount. */
+  async openAmountEditor(index: number): Promise<void> {
+    await this.checkAmountText(index).click();
+  }
+
+  /** Presses a numpad digit button ("1".."9", "0", "00") in the open amount dialog. */
+  async pressNumpadDigit(digit: string): Promise<void> {
+    await this.page.getByRole('button', { name: digit, exact: true }).click();
+  }
+
+  async pressNumpadBackspace(): Promise<void> {
+    await this.numpadBackspaceButton.click();
+  }
+
+  async confirmNumpad(): Promise<void> {
+    await this.numpadDoneButton.click();
+  }
+
+  /** By Items — checkbox for one item card, labelled "<name> $<price>". */
+  itemCheckbox(nameAndPrice: string | RegExp): Locator {
+    return this.page.getByRole('checkbox', { name: nameAndPrice });
+  }
+
+  async openHowToSplitByItemTooltip(): Promise<void> {
+    await this.howToSplitByItemButton.click();
+  }
+
+  async toggleReceiptDetails(): Promise<void> {
+    const showMoreVisible = await this.showMoreButton.isVisible().catch(() => false);
+    if (showMoreVisible) {
+      await this.showMoreButton.click();
+    } else {
+      await this.showLessButton.click();
+    }
+  }
+
+  async openTipDialog(): Promise<void> {
+    await this.tipButton.click();
   }
 
   async selectPaymentMethod(method: SplitPaymentMethod): Promise<void> {
