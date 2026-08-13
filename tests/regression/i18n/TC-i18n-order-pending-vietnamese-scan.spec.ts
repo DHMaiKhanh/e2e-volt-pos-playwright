@@ -38,7 +38,7 @@ import {
  *
  * Spec map: docs/i18n/order-pending-translation-map.md
  */
-test.describe(`i18n — Order Pending Vietnamese deep scan ${Tag.REGRESSION}`, () => {
+test.describe(`i18n — Order Pending Vietnamese deep scan ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   test('TC-I18N-VI-ORDER-PENDING: Order Pending screen + dialogs still in English', async ({
     page,
   }) => {

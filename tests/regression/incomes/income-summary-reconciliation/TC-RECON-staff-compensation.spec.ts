@@ -52,7 +52,7 @@ const loadStaffNames = (): string[] => {
   return DEFAULT_STAFF;
 };
 
-test.describe(`Staff Compensation from Settings → JSON ${Tag.REGRESSION}`, () => {
+test.describe(`Staff Compensation from Settings → JSON ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   test('TC-RECON: scrape each staff compensation → JSON', async ({ employeeSettingsPage }) => {
     test.setTimeout(180_000);
 

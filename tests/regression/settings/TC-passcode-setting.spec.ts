@@ -16,8 +16,13 @@ import { PasscodeDialog } from '@components/modal/PasscodeDialog';
  */
 const PASSCODE = process.env.OWNER_PASSCODE || '8888';
 
-test.describe(`Settings — Passcode Setting ${Tag.REGRESSION}`, () => {
-  test.beforeEach(async ({ accessibilitySettingsPage }) => {
+test.describe(`Settings — Passcode Setting ${Tag.REGRESSION} ${Tag.EXCLUSIVE}`, () => {
+  test.beforeEach(async ({ accessibilitySettingsPage, passcodeDialog }) => {
+    // TC-PASSCODE-02/03 assert the dialog appears (or not) on a gated route as
+    // the merchant switch is toggled. The suite caches a 30-minute grant that
+    // would suppress the dialog regardless of the switch, hiding the very
+    // behaviour under test — so drop the inherited grant before navigating.
+    await passcodeDialog.armGate();
     await accessibilitySettingsPage.goto();
   });
 

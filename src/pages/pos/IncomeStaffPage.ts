@@ -78,7 +78,8 @@ export class IncomeStaffPage extends BasePage {
 
   /** Readiness: title + the aggregate stat bar (mounts after permission granted). */
   async waitForReady(): Promise<void> {
-    await expect(this.heading).toBeVisible({ timeout: 15_000 });
+    // Fails fast on the app's error boundary — see BasePage.expectReady.
+    await this.expectReady(this.heading);
     await expect(this.statLabel('Total staff income')).toBeVisible({ timeout: 15_000 });
   }
 
@@ -142,12 +143,8 @@ export class IncomeStaffPage extends BasePage {
   /** Column header labels in order, e.g. ["Staff","Orders","Subtotal",...]. */
   async headerLabels(): Promise<string[]> {
     const headers = this.table.locator('thead th, thead [role="columnheader"]');
-    const count = await headers.count();
-    const labels: string[] = [];
-    for (let i = 0; i < count; i++) {
-      labels.push(((await headers.nth(i).textContent()) ?? '').trim());
-    }
-    return labels;
+    // Single round-trip instead of one per column — see IncomeSummaryPage.
+    return (await headers.allTextContents()).map((t) => t.trim());
   }
 
   /** Read a staff listing row's 6 cells by index. */

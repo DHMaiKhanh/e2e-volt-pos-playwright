@@ -58,6 +58,14 @@ const openRecentPayment = async (
 };
 
 test.describe(`Income Summary — Payment Details (real data) ${Tag.REGRESSION}`, () => {
+  /**
+   * These tests only READ the report — no order is created, no setting changed —
+   * so they are safe to run concurrently with each other. Needed because the
+   * suite runs `fullyParallel: false`, which otherwise pins a whole file to ONE
+   * worker: this file was 57.6s of serial work inside a single worker.
+   */
+  test.describe.configure({ mode: 'parallel' });
+
   test('TC-20 + TC-22: Card & Others = Sale + Refund + Tip + Tax (with sub-rows)', async ({
     incomeSummaryPage,
     passcodeDialog,

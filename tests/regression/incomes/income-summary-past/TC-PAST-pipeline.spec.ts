@@ -35,7 +35,7 @@ const SERVICE_SUPPLY_QUERY = `query serviceSupply { serviceList { name supplyFee
  * report for that date (authoritative); the section breakdown is derived from
  * the scraped per-staff service revenue × compensation.
  */
-test.describe(`Income Summary — past day pipeline ${Tag.REGRESSION}`, () => {
+test.describe(`Income Summary — past day pipeline ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   test('TC-PAST-PIPELINE: order history (date) → compensation → income summary', async ({
     graphql,
     orderHistoryPage,

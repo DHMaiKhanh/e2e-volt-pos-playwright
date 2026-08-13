@@ -15,8 +15,21 @@ import { readdirSync, readFileSync, existsSync, writeFileSync, statSync } from '
 import path from 'node:path';
 
 const REPORTS = path.resolve('reports');
-// Playwright-native + cross-screen folders are not "screens".
-const NATIVE = new Set(['html', 'json', 'junit', 'allure-results', 'i18n-audit']);
+// Playwright-native + cross-screen folders are not "screens". `html-<lane>` are
+// the per-lane HTML reports `test:pr` writes (REPORT_SLICE, see
+// playwright.config.ts), and `dashboard/` is the merged suite dashboard — all of
+// them hold an index.html that would otherwise be listed as a bogus screen.
+const NATIVE = new Set([
+  'html',
+  'json',
+  'junit',
+  'allure-results',
+  'allure-report',
+  'i18n-audit',
+  'dashboard',
+  'timing',
+]);
+const isNative = (name) => NATIVE.has(name) || name.startsWith('html-');
 
 const esc = (s) =>
   String(s ?? '').replace(
@@ -143,7 +156,7 @@ const section = (title, subtitle, reports) =>
 // --- gather screens ---
 const entries = readdirSync(REPORTS).filter((n) => {
   const full = path.join(REPORTS, n);
-  return statSync(full).isDirectory() && !NATIVE.has(n);
+  return statSync(full).isDirectory() && !isNative(n);
 });
 entries.sort();
 

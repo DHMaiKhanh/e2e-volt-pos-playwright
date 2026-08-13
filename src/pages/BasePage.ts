@@ -11,6 +11,58 @@ export abstract class BasePage {
 
   constructor(public readonly page: Page) {}
 
+  /**
+   * The app's error boundary ("Something went wrong … ← Back to Home"), which
+   * replaces the whole screen when a GraphQL query fails.
+   */
+  private get appErrorBoundary(): Locator {
+    return this.page.getByText('Something went wrong', { exact: false });
+  }
+
+  /**
+   * Wait for a screen's readiness signal, but give up immediately if the app
+   * renders its error boundary instead.
+   *
+   * WHY: when the backend hiccups, every gated screen renders "Something went
+   * wrong" and no content at all. A plain `expect(heading).toBeVisible()` then
+   * burns its full timeout before failing with "element(s) not found", which
+   * says nothing about the real cause. In a measured run, non-passing tests ate
+   * 40-51% of total test time, much of it exactly this.
+   *
+   * Racing the two turns a 30s timeout into a ~1s failure that names the cause.
+   */
+  protected async expectReady(ready: Locator, timeout = Timeouts.MEDIUM): Promise<void> {
+    const crashed = await Promise.race([
+      ready
+        .waitFor({ state: 'visible', timeout })
+        .then(() => false)
+        .catch(() => null),
+      this.appErrorBoundary
+        .waitFor({ state: 'visible', timeout })
+        .then(() => true)
+        .catch(() => null),
+    ]);
+
+    if (crashed === true) {
+      const detail = (await this.appErrorBoundary
+        .locator('..')
+        .innerText()
+        .catch(() => '')) as string;
+      throw new Error(
+        `App error boundary rendered instead of the screen — the backend call behind this ` +
+          `page failed, so this is an environment problem, not a selector one.\n` +
+          `Screen detail: ${detail.replace(/\s+/g, ' ').slice(0, 200)}`,
+      );
+    }
+
+    // Content won, or neither appeared. Either way the race has ALREADY given
+    // `ready` its full window, so re-assert with a short timeout purely to
+    // produce the familiar failure message. Passing `timeout` here again would
+    // make every non-crash failure wait twice as long as before this method
+    // existed — the opposite of the point.
+    await expect(ready).toBeVisible({ timeout: 1_000 });
+  }
+
   /** Subclasses must declare the URL path. baseURL is set in playwright.config. */
   protected abstract readonly path: string;
 

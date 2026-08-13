@@ -10,6 +10,20 @@ import { Tag } from '@/types/testTags';
 const PASSCODE = process.env.OWNER_PASSCODE || '8888';
 
 test.describe(`Settings — Shell ${Tag.REGRESSION}`, () => {
+  /**
+   * This file was written when the gate appeared on every visit, and several
+   * cases assert exactly that (TC-SETTINGS-01/02 wait for the dialog, -04 tests
+   * the "remember 30 minutes" behaviour). The suite now caches that grant for
+   * speed (tests/setup/pos.setup.ts), so each test drops the inherited grant
+   * first to keep testing the gate rather than the cache.
+   *
+   * `armGate()` only clears the grant on the first document load of the page, so
+   * TC-SETTINGS-04 can still tick the box, create its own grant, and navigate.
+   */
+  test.beforeEach(async ({ passcodeDialog }) => {
+    await passcodeDialog.armGate();
+  });
+
   test('TC-SETTINGS-01: navigating to /settings redirects to /settings/business', async ({
     page,
     settingsShellPage,

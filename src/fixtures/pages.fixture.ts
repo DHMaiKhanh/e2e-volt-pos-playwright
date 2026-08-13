@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test';
+import { workerStaffFixture as base } from './workerStaff.fixture';
 import { HomePage } from '@pages/pos/HomePage';
 import { OrderPendingPage } from '@pages/pos/OrderPendingPage';
 import { CheckoutPage } from '@pages/pos/CheckoutPage';
@@ -15,8 +15,12 @@ import { LanguageSettingsPage } from '@pages/settings/LanguageSettingsPage';
 import { AccessibilitySettingsPage } from '@pages/settings/AccessibilitySettingsPage';
 import { SettingsShellPage } from '@pages/settings/SettingsShellPage';
 import { AppointmentPage } from '@pages/pos/AppointmentPage';
+import { TurnBoardPage } from '@pages/pos/TurnBoardPage';
 import { PasscodeDialog } from '@components/modal/PasscodeDialog';
 import { QuickPayDialog } from '@components/modal/QuickPayDialog';
+import { AdjustManualTurnDialog } from '@components/modal/AdjustManualTurnDialog';
+import { TurnSettingsDialog } from '@components/modal/TurnSettingsDialog';
+import { TimeKeepingDialog } from '@components/modal/TimeKeepingDialog';
 import { SplitOrderPage } from '@pages/pos/SplitOrderPage';
 
 export interface PagesFixture {
@@ -36,14 +40,21 @@ export interface PagesFixture {
   accessibilitySettingsPage: AccessibilitySettingsPage;
   settingsShellPage: SettingsShellPage;
   appointmentPage: AppointmentPage;
+  turnBoardPage: TurnBoardPage;
   passcodeDialog: PasscodeDialog;
   quickPayDialog: QuickPayDialog;
+  adjustManualTurnDialog: AdjustManualTurnDialog;
+  turnSettingsDialog: TurnSettingsDialog;
+  timeKeepingDialog: TimeKeepingDialog;
   splitOrderPage: SplitOrderPage;
 }
 
 export const pagesFixture = base.extend<PagesFixture>({
-  homePage: async ({ page }, use) => {
-    await use(new HomePage(page));
+  // `workerIndex` is what gives each parallel worker its own staff: HomePage
+  // claims the Nth staff of the live roster, so no two workers drive the same
+  // staff's active order. See src/fixtures/workerStaff.fixture.ts.
+  homePage: async ({ page, workerIndex }, use) => {
+    await use(new HomePage(page, workerIndex));
   },
   orderPendingPage: async ({ page }, use) => {
     await use(new OrderPendingPage(page));
@@ -90,11 +101,25 @@ export const pagesFixture = base.extend<PagesFixture>({
   appointmentPage: async ({ page }, use) => {
     await use(new AppointmentPage(page));
   },
+  // The Turn board is a dialog, not a route: it defaults to /home as its host
+  // route, and specs that need another one construct their own instance.
+  turnBoardPage: async ({ page }, use) => {
+    await use(new TurnBoardPage(page));
+  },
   passcodeDialog: async ({ page }, use) => {
     await use(new PasscodeDialog(page));
   },
   quickPayDialog: async ({ page }, use) => {
     await use(new QuickPayDialog(page));
+  },
+  adjustManualTurnDialog: async ({ page }, use) => {
+    await use(new AdjustManualTurnDialog(page));
+  },
+  turnSettingsDialog: async ({ page }, use) => {
+    await use(new TurnSettingsDialog(page));
+  },
+  timeKeepingDialog: async ({ page }, use) => {
+    await use(new TimeKeepingDialog(page));
   },
   splitOrderPage: async ({ page }, use) => {
     await use(new SplitOrderPage(page));

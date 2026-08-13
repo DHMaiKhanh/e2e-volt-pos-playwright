@@ -34,7 +34,7 @@ import {
  * reports/home/screens/<page>.png (failing surfaces only). Gate by default; set
  * I18N_LENIENT=1 for an informational run that never fails.
  */
-test.describe(`i18n — Home Vietnamese deep scan ${Tag.REGRESSION}`, () => {
+test.describe(`i18n — Home Vietnamese deep scan ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   test('TC-I18N-VI-HOME: Home screen + popups still in English', async ({ page }) => {
     test.setTimeout(180_000);
 

@@ -150,3 +150,19 @@ export const STAFF = {
  * The dialog accepts this rather than per-staff codes.
  */
 export const OWNER_PASSCODE = '8888';
+
+/**
+ * Staff that specs pin BY NAME while asserting on that staff's own contribution
+ * to report totals — see TC19.21.38-live-delta.spec.ts and
+ * TC02.04.06.08.22.23.37-refund-cancel.spec.ts.
+ *
+ * A parallel worker must never claim one of these: if it created orders for the
+ * same staff, those specs would measure someone else's order too. Lives here
+ * rather than in the fixture so page objects can read it without importing the
+ * test runner.
+ */
+export const RESERVED_STAFF_NICKNAMES: ReadonlySet<string> = new Set([
+  STAFF.AMELIA.nickname,
+  STAFF.EMMA2.nickname,
+  STAFF.LUNA.nickname,
+]);

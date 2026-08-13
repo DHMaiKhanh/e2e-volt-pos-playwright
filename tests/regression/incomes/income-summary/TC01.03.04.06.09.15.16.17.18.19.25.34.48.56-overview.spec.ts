@@ -50,6 +50,14 @@ const sectionSegment = (panelText: string, section: string, nextSection: string)
 };
 
 test.describe(`Income Summary — overview (real data) ${Tag.REGRESSION}`, () => {
+  /**
+   * These tests only READ the report — no order is created, no setting changed —
+   * so they are safe to run concurrently with each other. Needed because the
+   * suite runs `fullyParallel: false`, which otherwise pins a whole file to ONE
+   * worker: this file was 100.2s of serial work inside a single worker.
+   */
+  test.describe.configure({ mode: 'parallel' });
+
   test('TC-1: default filter is Day + Today with a single period row', async ({
     incomeSummaryPage,
     passcodeDialog,

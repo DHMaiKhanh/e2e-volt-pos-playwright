@@ -88,7 +88,7 @@ const waitForRowToRevert = async (
 
 test.describe.configure({ mode: 'serial' });
 
-test.describe(`Daily Sale Report — refund & cancel ${Tag.REGRESSION} ${Tag.PAYMENT} ${Tag.SLOW}`, () => {
+test.describe(`Daily Sale Report — refund & cancel ${Tag.REGRESSION} ${Tag.PAYMENT} ${Tag.SLOW} ${Tag.EXCLUSIVE}`, () => {
   // Skipped: the cancel flow itself works (the order is verifiably moved to
   // "Canceled"), but Volt POS's LIVE daily report keeps the cancelled order's
   // `dailySaleSale` in today's total until the day settles — only the payment

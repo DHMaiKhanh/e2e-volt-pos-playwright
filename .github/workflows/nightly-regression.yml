@@ -4,19 +4,41 @@ on:
   schedule:
     - cron: '0 17 * * *' # 00:00 ICT
   workflow_dispatch:
+    inputs:
+      irv2_range_days:
+        description: 'Income Reports V2 comparison window (days)'
+        required: false
+        default: '60'
+
+env:
+  ENV: stage
+  BASE_URL: ${{ secrets.BASE_URL }}
+  API_BASE_URL: ${{ secrets.API_BASE_URL }}
+  ADMIN_USER: ${{ secrets.ADMIN_USER }}
+  ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+  CASHIER_USER: ${{ secrets.CASHIER_USER }}
+  CASHIER_PASS: ${{ secrets.CASHIER_PASS }}
+  OWNER_PASSCODE: ${{ secrets.OWNER_PASSCODE }}
 
 jobs:
+  # Everything the PR gate skips: the @slow scan/comparison pipelines plus the
+  # parallel-safe bulk, sharded. The heavy pipelines dominate here, so they get
+  # their own shards rather than sharing with the fast tests.
   regression:
+    name: regression (shard ${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
     env:
-      ENV: stage
-      BASE_URL: ${{ secrets.BASE_URL }}
-      API_BASE_URL: ${{ secrets.API_BASE_URL }}
-      ADMIN_USER: ${{ secrets.ADMIN_USER }}
-      ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
-      CASHIER_USER: ${{ secrets.CASHIER_USER }}
-      CASHIER_PASS: ${{ secrets.CASHIER_PASS }}
+      LANE: full
+      WORKERS: 6
+      PW_BLOB_REPORT: '1'
+      # The full 60-day V1-vs-V2 sweep runs here, not on PRs: it is ~180 per-day
+      # tests. Overridable from workflow_dispatch for a quick nightly.
+      IRV2_RANGE_DAYS: ${{ github.event.inputs.irv2_range_days || '60' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,19 +46,80 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
       - run: npm ci --ignore-scripts
-      - run: npx playwright install --with-deps
-      - run: npm run test:regression
+      - run: npx playwright install --with-deps chromium
 
-      - name: Generate Allure report
-        if: always()
-        run: |
-          npm i -g allure-commandline
-          allure generate reports/allure-results --clean -o reports/allure-report
+      - name: Run regression shard
+        run: >-
+          npx playwright test
+          --project=chromium --project=no-retry --project=api
+          --grep-invert "@exclusive"
+          --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
-      - name: Upload Allure report
+      - name: Upload blob report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nightly-allure-report
-          path: reports/allure-report
+          name: blob-nightly-${{ matrix.shard }}
+          path: blob-report
+          retention-days: 14
+
+      - name: Upload traces & videos on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-nightly-${{ matrix.shard }}
+          path: test-results
+          retention-days: 14
+
+  serial:
+    name: serial tail (@exclusive)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      LANE: full
+      PW_BLOB_REPORT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: >-
+          npx playwright test
+          --project=chromium --project=no-retry --project=serial
+          --grep "@exclusive" --workers=1
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-nightly-serial
+          path: blob-report
+          retention-days: 14
+
+  report:
+    name: merge + allure
+    if: always()
+    needs: [regression, serial]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-blobs
+          pattern: blob-nightly-*
+          merge-multiple: true
+      - name: Merge into one HTML report
+        run: npx playwright merge-reports --reporter html ./all-blobs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-html-report
+          path: playwright-report
           retention-days: 30

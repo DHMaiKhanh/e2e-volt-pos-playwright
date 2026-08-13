@@ -5,8 +5,6 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
-  schedule:
-    - cron: '0 18 * * *' # nightly regression at 01:00 ICT
   workflow_dispatch:
     inputs:
       environment:
@@ -15,88 +13,164 @@ on:
         default: 'stage'
         type: choice
         options: [local, stage, prod]
-      suite:
-        description: 'Suite to run'
+      lane:
+        description: 'Which lane to run'
         required: true
-        default: 'smoke'
+        default: 'pr'
         type: choice
-        options: [smoke, e2e, regression, api, visual, all]
+        options: [pr, full]
 
 concurrency:
   group: e2e-${{ github.ref }}-${{ github.event.inputs.environment || 'stage' }}
   cancel-in-progress: true
 
+env:
+  ENV: ${{ github.event.inputs.environment || 'stage' }}
+  BASE_URL: ${{ secrets.BASE_URL }}
+  API_BASE_URL: ${{ secrets.API_BASE_URL }}
+  ADMIN_USER: ${{ secrets.ADMIN_USER }}
+  ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+  CASHIER_USER: ${{ secrets.CASHIER_USER }}
+  CASHIER_PASS: ${{ secrets.CASHIER_PASS }}
+  PAYMENT_GATEWAY_URL: ${{ secrets.PAYMENT_GATEWAY_URL }}
+  PAYMENT_MERCHANT_ID: ${{ secrets.PAYMENT_MERCHANT_ID }}
+  PAYMENT_API_KEY: ${{ secrets.PAYMENT_API_KEY }}
+  OWNER_PASSCODE: ${{ secrets.OWNER_PASSCODE }}
+  PLAYWRIGHT_RUN_ID: ${{ github.run_id }}
+
 jobs:
-  test:
-    name: ${{ matrix.suite }} on ${{ matrix.browser }}
+  # Cheap gate: a compile error should not cost a browser matrix.
+  static:
+    name: typecheck + lint
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        suite:
-          - smoke
-        browser:
-          - chromium
-        include:
-          - suite: smoke
-            browser: firefox
-          - suite: smoke
-            browser: webkit
-    env:
-      ENV: ${{ github.event.inputs.environment || 'stage' }}
-      BASE_URL: ${{ secrets.BASE_URL }}
-      API_BASE_URL: ${{ secrets.API_BASE_URL }}
-      ADMIN_USER: ${{ secrets.ADMIN_USER }}
-      ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
-      CASHIER_USER: ${{ secrets.CASHIER_USER }}
-      CASHIER_PASS: ${{ secrets.CASHIER_PASS }}
-      PAYMENT_GATEWAY_URL: ${{ secrets.PAYMENT_GATEWAY_URL }}
-      PAYMENT_MERCHANT_ID: ${{ secrets.PAYMENT_MERCHANT_ID }}
-      PAYMENT_API_KEY: ${{ secrets.PAYMENT_API_KEY }}
-      PLAYWRIGHT_RUN_ID: ${{ github.run_id }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-
       - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run lint
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+  # ── The PR gate ────────────────────────────────────────────────────────────
+  # The parallel-safe bulk, split across runners. Each shard runs its slice on
+  # several workers, so wall-clock is (aggregate ÷ shards ÷ workers). Shards are
+  # independent machines, so their app instances cannot contend with each other.
+  fast:
+    name: fast lane (shard ${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      LANE: fast
+      # Per-worker staff isolation caps the worker count; see
+      # src/fixtures/workerStaff.fixture.ts. Keep this <= the pool size.
+      WORKERS: 6
+      PW_BLOB_REPORT: '1'
+      PERF_BUDGET_SECONDS: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Run fast lane shard
+        run: >-
+          npx playwright test
+          --project=chromium --project=no-retry --project=api
+          --grep-invert "@slow|@exclusive"
+          --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
-      - name: Lint
-        run: npm run lint
+      # Gate on runtime AND on skip rate. A dataset that has been reset makes
+      # every `test.skip(!found, 'no data')` guard fire at once, so the shard can
+      # pass while testing almost nothing — this turns that into a red build.
+      - name: Check runtime + coverage budget
+        if: always()
+        run: node scripts/perf-summary.mjs --budget 300
 
-      - name: Run tests
-        run: npx playwright test --project=${{ matrix.browser }} tests/${{ matrix.suite }}
-
-      - name: Upload Playwright HTML report
+      - name: Upload blob report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: html-report-${{ matrix.suite }}-${{ matrix.browser }}
-          path: reports/html
-          retention-days: 14
+          name: blob-fast-${{ matrix.shard }}
+          path: blob-report
+          retention-days: 7
 
-      - name: Upload Allure results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results-${{ matrix.suite }}-${{ matrix.browser }}
-          path: reports/allure-results
-          retention-days: 14
-
-      - name: Upload traces & videos
+      - name: Upload traces on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: traces-${{ matrix.suite }}-${{ matrix.browser }}
+          name: traces-fast-${{ matrix.shard }}
           path: test-results
+          retention-days: 14
+
+  # ── The serial tail ────────────────────────────────────────────────────────
+  # @exclusive specs mutate merchant-wide settings (app language, the passcode
+  # switch) or assert TODAY's shop-wide report totals. Neither is protected by
+  # per-worker staff isolation, so they get one worker and no neighbours. Kept as
+  # a separate job so it cannot overlap the sharded lane above.
+  serial:
+    name: serial tail (@exclusive)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      LANE: fast
+      PW_BLOB_REPORT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Run @exclusive specs on a single worker
+        run: >-
+          npx playwright test
+          --project=chromium --project=no-retry --project=serial
+          --grep "@exclusive" --workers=1
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-serial
+          path: blob-report
+          retention-days: 7
+
+  # One HTML report out of every shard + the serial tail.
+  report:
+    name: merge reports
+    if: always()
+    needs: [fast, serial]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-blobs
+          pattern: blob-*
+          merge-multiple: true
+      - name: Merge into one HTML report
+        run: npx playwright merge-reports --reporter html ./all-blobs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: playwright-report
           retention-days: 14
