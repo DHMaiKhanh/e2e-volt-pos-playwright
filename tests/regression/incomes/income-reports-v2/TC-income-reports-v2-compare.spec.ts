@@ -71,8 +71,18 @@ function isoDate(d: Date): string {
 const outDir = path.resolve(__dirname, '../../../../reports/income-reports-v2');
 const partsDir = path.join(outDir, '.parts');
 
-/** Rolling ~60-day window: today and the 59 days before it. */
-const RANGE_DAYS = 60;
+/**
+ * Rolling window: today and the N-1 days before it.
+ *
+ * Was a hard-coded 60. Each day costs ~9s per case (2 SPA navigations + a full
+ * scrape), and with 3 cases that made this ONE file 1121s of the suite's 3544s —
+ * 32% of the total, and a floor no amount of parallelism could get under while
+ * each case was a single test.
+ *
+ * Now the window is the knob: the PR lane checks a week, the nightly lane keeps
+ * the full 60-day sweep. Override with `IRV2_RANGE_DAYS`.
+ */
+const RANGE_DAYS = Math.max(1, Number(process.env.IRV2_RANGE_DAYS ?? 60));
 const today = new Date();
 const days: Date[] = Array.from({ length: RANGE_DAYS }, (_, i) => {
   const d = new Date(today);
@@ -89,23 +99,35 @@ function writePart(caseReport: CaseReport, date: string, slug: string): void {
   );
 }
 
-test.describe(`Income Reports V2 — V1 vs V2 parity ${Tag.REGRESSION}`, () => {
-  test('TC-IRV2-1: Daily Sale Report v1 vs v2 match (day by day)', async ({
-    dailySaleReportPage,
-    passcodeDialog,
-    page,
-  }) => {
-    // 30 days × 2 SPA reloads (v1 then v2) × a full order-row scrape each —
-    // much slower than a single aggregated range, so give it a wide ceiling.
-    test.setTimeout(40 * 60_000);
-    // Clear any stale parts from a previous run — this test always runs
-    // first in a full-suite invocation, so it's the right place to reset.
+test.describe(`Income Reports V2 — V1 vs V2 parity ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
+  /**
+   * One test per (day, case) instead of one test per case looping every day.
+   *
+   * `mode: 'parallel'` is the half that makes the split pay off: the suite runs
+   * `fullyParallel: false`, so tests in a file otherwise share ONE worker and
+   * splitting a loop into 60 tests would still run them back to back. Opted in
+   * per-describe rather than globally because these comparisons are read-only —
+   * they navigate and scrape, never create an order — and each writes its own
+   * uniquely named `<date>__<case>.json` part, so concurrent days cannot collide.
+   */
+  test.describe.configure({ mode: 'parallel' });
+
+  // Drop stale parts from a previous run exactly once, before any day runs.
+  // This used to live inside TC-IRV2-1 on the assumption that it always ran
+  // first; with the days split across parallel workers that is no longer true.
+  test.beforeAll(() => {
     fs.rmSync(partsDir, { recursive: true, force: true });
+  });
 
-    const dailyV2 = new DailySaleReportPage(page, 'v2');
+  for (const date of days) {
+    const dateStr = isoDate(date);
 
-    for (const date of days) {
-      const dateStr = isoDate(date);
+    test(`TC-IRV2-1 ${dateStr}: Daily Sale Report v1 vs v2 match`, async ({
+      dailySaleReportPage,
+      passcodeDialog,
+      page,
+    }) => {
+      const dailyV2 = new DailySaleReportPage(page, 'v2');
 
       await dailySaleReportPage.gotoRange(date, date);
       await unlockIfPrompted(passcodeDialog, OWNER_PASSCODE);
@@ -157,20 +179,14 @@ test.describe(`Income Reports V2 — V1 vs V2 parity ${Tag.REGRESSION}`, () => {
         dateStr,
         '1-daily-sale-report',
       );
-    }
-  });
+    });
 
-  test('TC-IRV2-2: Income Summary v1 vs v2 — Sale Details / Salon Earnings parity (day by day)', async ({
-    incomeSummaryPage,
-    passcodeDialog,
-    page,
-  }) => {
-    test.setTimeout(40 * 60_000);
-
-    const summaryV2 = new IncomeSummaryPage(page, 'v2');
-
-    for (const date of days) {
-      const dateStr = isoDate(date);
+    test(`TC-IRV2-2 ${dateStr}: Income Summary v1 vs v2 — Sale Details / Salon Earnings parity`, async ({
+      incomeSummaryPage,
+      passcodeDialog,
+      page,
+    }) => {
+      const summaryV2 = new IncomeSummaryPage(page, 'v2');
 
       await incomeSummaryPage.gotoRange(date, date, 'Day');
       await unlockIfPrompted(passcodeDialog, OWNER_PASSCODE);
@@ -234,29 +250,23 @@ test.describe(`Income Reports V2 — V1 vs V2 parity ${Tag.REGRESSION}`, () => {
         dateStr,
         '2-income-summary',
       );
-    }
-  });
+    });
 
-  test('TC-IRV2-3: Staff Income v1 vs v2 — stat bar + staff table match (day by day)', async ({
-    incomeStaffPage,
-    passcodeDialog,
-    page,
-  }) => {
-    test.setTimeout(40 * 60_000);
+    test(`TC-IRV2-3 ${dateStr}: Staff Income v1 vs v2 — stat bar + staff table match`, async ({
+      incomeStaffPage,
+      passcodeDialog,
+      page,
+    }) => {
+      const statNames = [
+        'Total staff',
+        'Total orders',
+        'Total subtotal',
+        'Total supply fee',
+        'Total tip',
+        'Total staff income',
+      ] as const;
 
-    const statNames = [
-      'Total staff',
-      'Total orders',
-      'Total subtotal',
-      'Total supply fee',
-      'Total tip',
-      'Total staff income',
-    ] as const;
-
-    const staffV2 = new IncomeStaffPage(page, 'v2');
-
-    for (const date of days) {
-      const dateStr = isoDate(date);
+      const staffV2 = new IncomeStaffPage(page, 'v2');
 
       await incomeStaffPage.gotoRange(date, date);
       await unlockIfPrompted(passcodeDialog, OWNER_PASSCODE);
@@ -342,15 +352,20 @@ test.describe(`Income Reports V2 — V1 vs V2 parity ${Tag.REGRESSION}`, () => {
         dateStr,
         '3-staff-income',
       );
-    }
-  });
+    });
+  }
 
-  // Runs after EVERY test in this file (not just the last worker's), since
-  // each day/case part is written to disk independently — reads whatever
-  // landed in `.parts/` so far, groups it by date, and re-renders the
-  // combined calendar report. The final call (from whichever worker runs
-  // last) leaves the complete, up-to-date file behind.
-  test.afterEach(() => {
+  /**
+   * Re-render the combined calendar report from whatever parts are on disk.
+   *
+   * Was `afterEach`, which was affordable when this file held 3 tests. Split per
+   * day it would run once per (day × case) — 180 renders, each re-reading every
+   * part file — so it moves to `afterAll`, which fires once per worker as that
+   * worker finishes the file. Parts are keyed `<date>__<case>.json` and written
+   * independently, so any render picks up every part that has landed; the last
+   * worker to finish leaves the complete report behind.
+   */
+  test.afterAll(() => {
     if (!fs.existsSync(partsDir)) return;
     const partFiles = fs.readdirSync(partsDir).filter((f) => f.endsWith('.json'));
     if (partFiles.length === 0) return;

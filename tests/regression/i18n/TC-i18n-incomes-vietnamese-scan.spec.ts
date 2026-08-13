@@ -37,7 +37,7 @@ import {
  *
  * Spec map: docs/i18n/incomes-translation-map.md
  */
-test.describe(`i18n — Incomes (reports) Vietnamese deep scan ${Tag.REGRESSION}`, () => {
+test.describe(`i18n — Incomes (reports) Vietnamese deep scan ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   test('TC-I18N-VI-INCOMES: Daily/Summary/Staff income screens still in English', async ({
     page,
   }) => {

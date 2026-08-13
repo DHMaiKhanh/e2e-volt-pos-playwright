@@ -74,7 +74,8 @@ export class IncomeSummaryPage extends BasePage {
   }
 
   async waitForReady(): Promise<void> {
-    await expect(this.heading).toBeVisible({ timeout: 15_000 });
+    // Fails fast on the app's error boundary — see BasePage.expectReady.
+    await this.expectReady(this.heading);
     await expect(this.totalIncomeHeading).toBeVisible({ timeout: 15_000 });
   }
 
@@ -166,12 +167,10 @@ export class IncomeSummaryPage extends BasePage {
   /** Column header labels in order — e.g. ["Date","Sale","Tip","Tax","Total Payment"]. */
   async headerLabels(): Promise<string[]> {
     const headers = this.table.locator('thead th, thead [role="columnheader"]');
-    const count = await headers.count();
-    const labels: string[] = [];
-    for (let i = 0; i < count; i++) {
-      labels.push(((await headers.nth(i).textContent()) ?? '').trim());
-    }
-    return labels;
+    // One round-trip for all headers. The previous `.nth(i).textContent()` loop
+    // cost one round-trip per column, which is the kind of overhead that grows
+    // sharply once several workers share the app.
+    return (await headers.allTextContents()).map((t) => t.trim());
   }
 
   /** Read a table row's 5 cells by row index. */

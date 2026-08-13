@@ -103,7 +103,7 @@ test.describe(`Daily Sale Report — tax (settled, real DB) ${Tag.REGRESSION}`, 
 
 test.describe.configure({ mode: 'serial' });
 
-test.describe(`Daily Sale Report — gift card (live, real DB) ${Tag.REGRESSION} ${Tag.PAYMENT} ${Tag.SLOW}`, () => {
+test.describe(`Daily Sale Report — gift card (live, real DB) ${Tag.REGRESSION} ${Tag.PAYMENT} ${Tag.SLOW} ${Tag.EXCLUSIVE}`, () => {
   // Skipped: the flow drives correctly up to gift-card redemption, but the
   // manual "Input Gift Card Code" → Confirm step leaves Confirm disabled —
   // the seed gift-card code isn't funded/valid in the current dev DB, so the

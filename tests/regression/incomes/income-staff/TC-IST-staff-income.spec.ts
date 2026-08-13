@@ -27,11 +27,27 @@ const STAT_LABELS: StaffIncomeStat[] = [
   'Total staff income',
 ];
 
+/**
+ * These tests only READ the report — no order is created, no setting changed —
+ * so they are safe to run concurrently. Needed because the suite runs
+ * `fullyParallel: false`, which otherwise pins a whole file to ONE worker: this
+ * file was 128.5s of serial work inside a single worker.
+ *
+ * Declared at FILE scope so it covers all three describes below, not just the
+ * first one.
+ */
+test.describe.configure({ mode: 'parallel' });
+
 test.describe(`Staff Income — structure & permission ${Tag.REGRESSION}`, () => {
   test('TC-IST-01: opening the route shows the passcode dialog before data renders', async ({
     incomeStaffPage,
     passcodeDialog,
   }) => {
+    // The gate IS this test's subject, so opt out of the suite-wide cached
+    // grant (tests/setup/pos.setup.ts) — otherwise no dialog ever appears and
+    // this would assert the cache instead of the gate. Must precede goto().
+    await passcodeDialog.armGate();
+
     await incomeStaffPage.goto();
     await passcodeDialog.waitForVisible();
     expect(await passcodeDialog.isOpen()).toBe(true);

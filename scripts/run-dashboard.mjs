@@ -24,7 +24,12 @@ if (testRun.status !== 0) {
 }
 
 console.log('▶ Building dashboard from reports/json/results.json...');
-const build = spawnSync('node', ['scripts/build-dashboard.mjs'], { stdio: 'inherit', shell: true });
+// Explicit input: this is a single-invocation run, so it must not pick up the
+// per-lane results files a recent `npm run test:pr` may have left behind.
+const build = spawnSync('node', ['scripts/build-dashboard.mjs', 'reports/json/results.json'], {
+  stdio: 'inherit',
+  shell: true,
+});
 if (build.status !== 0) process.exit(build.status);
 
 const dashboardPath = path.resolve('reports/dashboard/index.html');

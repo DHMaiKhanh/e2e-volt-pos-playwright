@@ -3,6 +3,22 @@ import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
 
 test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => {
+  /**
+   * Each test builds and pays for its OWN order and asserts only on that order —
+   * never on shop-wide totals — so concurrency is safe here. Per-worker staff
+   * isolation (src/fixtures/workerStaff.fixture.ts) puts each worker's order on a
+   * different staff member, which is what keeps the active-order race away.
+   *
+   * Needed because `fullyParallel: false` pins a whole file to ONE worker: this
+   * file was 88.5s of serial work and was the critical path of its CI shard.
+   */
+  test.describe.configure({ mode: 'parallel' });
+
+  /** Same reason as otherPayment.e2e.spec.ts: full order+payment flows are 20s+
+   * under contention, so they opt out of the tight fast-lane budget individually
+   * instead of the config raising it for the whole lane. */
+  test.slow();
+
   test.beforeEach(async ({ homePage }) => {
     await homePage.goto();
   });

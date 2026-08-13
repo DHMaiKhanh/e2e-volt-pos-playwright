@@ -38,7 +38,7 @@ import {
  *
  * Spec map: docs/i18n/order-history-translation-map.md
  */
-test.describe(`i18n — Order History Vietnamese deep scan ${Tag.REGRESSION}`, () => {
+test.describe(`i18n — Order History Vietnamese deep scan ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   test('TC-I18N-VI-ORDER-HISTORY: Order History screen + dialogs still in English', async ({
     page,
   }) => {

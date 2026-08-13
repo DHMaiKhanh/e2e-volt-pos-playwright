@@ -38,7 +38,7 @@ import {
  */
 const SCREEN = process.env.I18N_SCREEN || 'home';
 
-test.describe(`i18n — so sánh EN↔VI theo màn ${Tag.REGRESSION}`, () => {
+test.describe(`i18n — so sánh EN↔VI theo màn ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   test(`TC-I18N-COMPARE: ${SCREEN}`, async ({ page }) => {
     test.setTimeout(180_000);
 

@@ -65,8 +65,10 @@ export class OrderHistoryPage extends BasePage {
   }
 
   async waitForReady(): Promise<void> {
-    // The header is always present; wait for it before doing anything.
-    await expect(this.page.getByRole('heading', { name: /Order History/i })).toBeVisible();
+    // The header is always present; wait for it before doing anything — but
+    // give up at once if the app rendered its error boundary instead, rather
+    // than spending the whole timeout. See BasePage.expectReady.
+    await this.expectReady(this.page.getByRole('heading', { name: /Order History/i }));
   }
 
   // ----------------------------------------------------- date filter + list

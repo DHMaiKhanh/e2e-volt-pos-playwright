@@ -89,7 +89,10 @@ export class DailySaleReportPage extends BasePage {
    * Heading alone is not a reliable indicator on this page.
    */
   async waitForReady(): Promise<void> {
-    await expect(this.heading).toBeVisible();
+    // `expectReady` fails immediately if the app renders its error boundary
+    // instead of the report, rather than burning the full timeout on a screen
+    // that will never appear. See BasePage.expectReady.
+    await this.expectReady(this.heading);
     await expect(this.card('Sale')).toBeVisible({ timeout: 15_000 });
   }
 
@@ -293,10 +296,10 @@ export class DailySaleReportPage extends BasePage {
   async allOrderCodes(): Promise<string[]> {
     if (!(await this.ordersTable.isVisible().catch(() => false))) return [];
     const rows = this.ordersTable.locator('tbody tr');
-    const count = await rows.count();
+    // One round-trip for the whole table instead of one per row — the orders
+    // table routinely has dozens of rows, and this runs on most report tests.
     const codes: string[] = [];
-    for (let i = 0; i < count; i++) {
-      const text = (await rows.nth(i).textContent()) ?? '';
+    for (const text of await rows.allTextContents()) {
       const match = text.match(/OD\d{6}-\d+/);
       if (match) codes.push(match[0]);
     }

@@ -24,19 +24,19 @@ async function openUnlocked(
   passcodeDialog: PasscodeDialog,
 ): Promise<void> {
   await businessInfoPage.goto();
-  // Cold `goto` renders the app before the passcode dialog mounts, so poll for
-  // it (best-effort) instead of checking immediately — otherwise the gate opens
-  // a beat later and blocks the form while we skip unlocking.
-  await passcodeDialog.waitForVisible(8_000).catch(() => {});
-  if (await passcodeDialog.isOpen()) {
-    await passcodeDialog.tickRemember30m();
-    await passcodeDialog.enterPasscode(PASSCODE);
-  }
+  // Was a blind `waitForVisible(8_000).catch(...)`: correct, but it paid the
+  // full 8s on every call once the suite started caching the passcode grant,
+  // because the dialog it waited for is never going to mount.
+  // `unlockIfPrompted` consults that grant, and otherwise races the gate against
+  // the form itself — so neither outcome waits on a timeout.
+  await passcodeDialog.unlockIfPrompted(PASSCODE, { readySignal: businessInfoPage.heading });
   await businessInfoPage.waitForReady();
 }
 
 test.describe(`Settings — Business Info ${Tag.REGRESSION}`, () => {
   test('TC-BIZ-01: passcode gate shows on entry', async ({ businessInfoPage, passcodeDialog }) => {
+    // Gate is the subject — drop the suite's cached grant so a real one appears.
+    await passcodeDialog.armGate();
     await businessInfoPage.goto();
     await passcodeDialog.waitForVisible();
     await expect(passcodeDialog.dialog).toBeVisible();
@@ -46,6 +46,7 @@ test.describe(`Settings — Business Info ${Tag.REGRESSION}`, () => {
     businessInfoPage,
     passcodeDialog,
   }) => {
+    await passcodeDialog.armGate();
     await businessInfoPage.goto();
     await passcodeDialog.waitForVisible();
     await passcodeDialog.tickRemember30m();

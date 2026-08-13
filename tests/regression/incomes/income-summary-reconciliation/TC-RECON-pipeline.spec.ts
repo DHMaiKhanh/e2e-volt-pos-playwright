@@ -48,7 +48,7 @@ const MERCHANT_QUERY = `query merchant { merchantSettingList { id businessName }
  * OUTPUT — `dsr-income-summary-app-<date>.html` (+ latest) and JSON:
  *          pipeline-orders / staff-compensation / product-supply / income-summary-full.
  */
-test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () => {
+test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   test('TC-RECON-PIPELINE: orders+staff+product → compensation → income summary', async ({
     page,
     graphql,

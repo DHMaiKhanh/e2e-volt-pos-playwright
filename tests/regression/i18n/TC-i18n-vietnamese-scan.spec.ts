@@ -60,7 +60,7 @@ import {
  * MODE   — gate by default (fails, enumerating every untranslated screen);
  *          set I18N_LENIENT=1 for an informational run that never fails.
  */
-test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
+test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
   test('TC-I18N-VI-SCAN: list screens not yet translated to Vietnamese', async ({ page }) => {
     // 10 min: the full walk now includes deep scans for Home, Order History,
     // Order Pending, the 3 Income reports, Time Keeping and Split Order — well

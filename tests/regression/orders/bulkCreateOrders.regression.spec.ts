@@ -15,7 +15,7 @@ const ORDER_CONFIGS = [
   { serviceCount: 2 },
 ];
 
-test.describe(`Orders — bulk create 10 orders ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
+test.describe(`Orders — bulk create 10 orders ${Tag.REGRESSION} ${Tag.SLOW} ${Tag.EXCLUSIVE}`, () => {
   for (let i = 0; i < ORDER_CONFIGS.length; i++) {
     const config = ORDER_CONFIGS[i];
 

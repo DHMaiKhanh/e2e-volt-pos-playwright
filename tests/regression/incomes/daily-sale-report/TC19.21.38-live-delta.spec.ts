@@ -67,7 +67,7 @@ const waitForRowToAdvance = async (
   return row;
 };
 
-test.describe(`Daily Sale Report — live delta ${Tag.REGRESSION} ${Tag.PAYMENT} ${Tag.SLOW}`, () => {
+test.describe(`Daily Sale Report — live delta ${Tag.REGRESSION} ${Tag.PAYMENT} ${Tag.SLOW} ${Tag.EXCLUSIVE}`, () => {
   // Skipped: this test pays with a $0 tip, which makes Volt POS pause at the
   // "Customer is adding a tip" prompt — it waits on the paired customer-facing
   // display to confirm the tip, and the headless test env has no such display,

@@ -1,9 +1,20 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 import { BasePage } from '@pages/BasePage';
 import { Urls } from '@constants/urls';
+import { RESERVED_STAFF_NICKNAMES } from '@data/static/staff';
 
 export class HomePage extends BasePage {
   protected readonly path = Urls.HOME;
+
+  /**
+   * This Playwright worker's slot number, injected by the `homePage` fixture.
+   *
+   * When set, {@link selectAnyStaff} claims the Nth staff of the live roster
+   * instead of whichever card renders first — which is what lets multiple
+   * workers create orders concurrently without fighting over one staff's active
+   * order. See src/fixtures/workerStaff.fixture.ts.
+   */
+  private readonly workerIndex?: number;
 
   readonly staffSearchInput: Locator;
   readonly serviceSearchInput: Locator;
@@ -16,8 +27,9 @@ export class HomePage extends BasePage {
   readonly noteButton: Locator;
   readonly mergeOrderButton: Locator;
 
-  constructor(page: Page) {
+  constructor(page: Page, workerIndex?: number) {
     super(page);
+    this.workerIndex = workerIndex;
     this.staffSearchInput = page.getByPlaceholder('Search staff');
     this.serviceSearchInput = page.getByPlaceholder('Search service');
     this.payButton = page.getByRole('button', { name: 'Pay' });
@@ -47,10 +59,23 @@ export class HomePage extends BasePage {
     // The order header's whole-order delete affordance is labelled "Remove"
     // (older builds called it "Delete Order" — see this.deleteOrderButton).
     const deleteButton = this.deleteOrderButton;
-    if (await deleteButton.isVisible({ timeout: 500 }).catch(() => false)) {
+    // `isVisible()` is deliberately NON-waiting here, and the `{ timeout: 500 }`
+    // it used to carry was a no-op that read as if it waited: isVisible() never
+    // retries. Non-waiting is right for this check — the caller has already
+    // waited for `staffSearchInput`, so the cart panel has rendered and "no
+    // Remove button" genuinely means "no leftover order". Anything that waits
+    // here would add its full timeout to EVERY goto(), since the common case is
+    // that there is nothing to clean up.
+    if (await deleteButton.isVisible().catch(() => false)) {
       await deleteButton.click();
       const confirmButton = this.page.getByRole('button', { name: /confirm|yes|ok|delete/i });
-      if (await confirmButton.isVisible({ timeout: 500 }).catch(() => false)) {
+      // The confirm dialog IS an async mount, so this one has to wait.
+      if (
+        await confirmButton
+          .waitFor({ state: 'visible', timeout: 2_000 })
+          .then(() => true)
+          .catch(() => false)
+      ) {
         await confirmButton.click();
       }
       // Wait for the Remove button to disappear — that's the real signal
@@ -78,9 +103,69 @@ export class HomePage extends BasePage {
   }
 
   /**
-   * Picks whichever staff card the UI currently renders first, instead of a
-   * name hard-coded in the test — the seeded staff roster (and who's active)
-   * can change over time, so pinning tests to one nickname makes them brittle.
+   * Resolve which staff card {@link selectAnyStaff} should claim.
+   *
+   * With a worker staff injected (the parallel case) this returns THAT staff's
+   * card, so concurrent workers never touch the same staff's active order. The
+   * card may be below the fold or outside the default page of the roster, so
+   * fall back to filtering via the "Search staff" box, which puts any active
+   * staff in the DOM. Without a worker staff (single-worker runs, or a worker
+   * whose staff is missing from this shop's roster) it returns the first card —
+   * the original behaviour.
+   */
+  private async resolveStaffCard(): Promise<Locator> {
+    const listing = this.page.locator('#home-staff-listing');
+    const cards = listing.locator('[class*="cursor"]');
+    const anyCard = cards.first();
+    if (this.workerIndex === undefined) return anyCard;
+
+    // Claim by slot against the LIVE roster rather than by a nickname from
+    // src/data/static/staff.ts: that file is a snapshot of one dev shop, and
+    // against any other shop every nickname misses and all workers fall back to
+    // the same first card — silently losing isolation.
+    await anyCard.waitFor({ state: 'visible' });
+    const names = (await cards.locator('.truncate').allTextContents())
+      .map((n) => n.trim())
+      .filter((n) => n.length > 0 && !RESERVED_STAFF_NICKNAMES.has(n));
+
+    // Sorted so every worker computes the SAME ordering. Render order is not
+    // stable (cards carry next-appointment info), so index-into-DOM alone could
+    // hand two workers the same staff after a re-sort.
+    const pool = [...new Set(names)].sort();
+
+    if (pool.length === 0) {
+      this.logger.warn(
+        'Staff roster looks empty — falling back to the first card; parallel isolation is LOST.',
+      );
+      return anyCard;
+    }
+
+    if (this.workerIndex >= pool.length) {
+      // More workers than staff: two workers WILL share a staff and the
+      // active-order race returns. Say so rather than flaking mysteriously.
+      this.logger.warn(
+        `Worker ${this.workerIndex} exceeds this shop's claimable roster (${pool.length} staff). ` +
+          `Run with at most ${pool.length} workers, or add staff to the shop. ` +
+          `Parallel isolation is LOST for this test.`,
+      );
+    }
+
+    const claimed = pool[this.workerIndex % pool.length];
+    const owned = cards.filter({ hasText: claimed }).first();
+    if (await owned.count()) return owned;
+
+    // Below the fold or filtered out — surface it through the roster search.
+    await this.staffSearchInput.fill(claimed);
+    if (await owned.count()) return owned;
+    await this.staffSearchInput.clear();
+    return anyCard;
+  }
+
+  /**
+   * Claims a staff card and opens an order on it. Prefers the staff this worker
+   * owns (see {@link resolveStaffCard}); otherwise takes whichever card renders
+   * first, since the seeded roster changes over time and pinning tests to one
+   * nickname makes them brittle.
    * Returns the picked staff's displayed name for later assertions.
    */
   async selectAnyStaff(): Promise<string> {
@@ -90,13 +175,16 @@ export class HomePage extends BasePage {
       })
       .catch(() => undefined);
 
-    const staffCard = this.page.locator('#home-staff-listing [class*="cursor"]').first();
+    const staffCard = await this.resolveStaffCard();
     await staffCard.waitFor({ state: 'visible' });
     // Read only the name span — the card's full textContent also picks up
     // "Next appt" / time / appointment-count badge, which pollutes the name
     // and breaks later `getByText(`Staff: ${name}`)` lookups on Checkout.
     const staffName = (await staffCard.locator('.truncate').first().textContent())?.trim() ?? '';
     await staffCard.click({ force: true });
+    // Drop any roster filter resolveStaffCard() had to apply, so later steps
+    // (and other page objects) see the full staff list again.
+    await this.staffSearchInput.clear();
     await this.waitForOrderCreated();
     return staffName;
   }

@@ -118,8 +118,11 @@ test.describe(`Split Order — multi-item ${Tag.REGRESSION} ${Tag.UI}`, () => {
     await homePage.openSplitOrder();
     await splitOrderPage.selectMethod('By Amount');
 
-    const before1 = await splitOrderPage.checkAmountText(1).textContent();
-    const before2 = await splitOrderPage.checkAmountText(2).textContent();
+    // `textContent()` is `string | null`; the `not.toHaveText(...)` assertions
+    // below only accept a string. An empty string is the right stand-in — if the
+    // cell really were empty, "changed away from empty" is still what we mean.
+    const before1 = (await splitOrderPage.checkAmountText(1).textContent()) ?? '';
+    const before2 = (await splitOrderPage.checkAmountText(2).textContent()) ?? '';
 
     await splitOrderPage.openAmountEditor(1);
     for (let i = 0; i < 10; i++) {

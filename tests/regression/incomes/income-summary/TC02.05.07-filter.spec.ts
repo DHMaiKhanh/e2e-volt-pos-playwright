@@ -19,6 +19,14 @@ const open = async (
 };
 
 test.describe(`Income Summary — Filter (real data) ${Tag.REGRESSION}`, () => {
+  /**
+   * These tests only READ the report — no order is created, no setting changed —
+   * so they are safe to run concurrently with each other. Needed because the
+   * suite runs `fullyParallel: false`, which otherwise pins a whole file to ONE
+   * worker: this file was 53.7s of serial work inside a single worker.
+   */
+  test.describe.configure({ mode: 'parallel' });
+
   test('TC-2: switching to Week surfaces a year selector (not the "Today" preset)', async ({
     incomeSummaryPage,
     passcodeDialog,

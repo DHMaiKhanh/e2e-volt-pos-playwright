@@ -4,6 +4,25 @@ import { OWNER_PASSCODE } from '@data/static/staff';
 import { OTHER_PAYMENT_LABELS } from '@data/static/paymentMethods';
 
 test.describe(`Orders — Other payment method ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => {
+  /**
+   * Each test builds and pays for its OWN order and asserts only on that order —
+   * never on shop-wide totals — so concurrency is safe here. Per-worker staff
+   * isolation (src/fixtures/workerStaff.fixture.ts) puts each worker's order on a
+   * different staff member, which is what keeps the active-order race away.
+   *
+   * Needed because `fullyParallel: false` pins a whole file to ONE worker: this
+   * file was 200.9s of serial work and was the critical path of its CI shard.
+   */
+  test.describe.configure({ mode: 'parallel' });
+
+  /**
+   * Build-order → pay → verify-success is genuinely long: 24-31s each once six
+   * of them run concurrently. They opt out of the fast lane's tight 30s budget
+   * here rather than the config raising it for all 259 tests — a global bump
+   * measured at ~34s of wall clock, because failing tests would burn it too.
+   */
+  test.slow();
+
   test.beforeEach(async ({ homePage }) => {
     await homePage.goto();
   });

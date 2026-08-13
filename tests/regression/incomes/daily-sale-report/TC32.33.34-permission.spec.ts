@@ -21,6 +21,17 @@ import { OWNER_PASSCODE } from '@data/static/staff';
  *     is left as a `test.skip()` placeholder for a future `page.clock` upgrade.
  */
 test.describe(`Daily Sale Report — permission & passcode ${Tag.REGRESSION} ${Tag.AUTH}`, () => {
+  /**
+   * This file is the one place where the gate IS the subject, so it opts out of
+   * the suite-wide cached grant. Every other gated spec inherits a live
+   * `volt-passcode-skip` from tests/setup/pos.setup.ts and never sees the dialog;
+   * without this the assertions below would be testing the cache, not the gate.
+   * Runs before each test's first navigation, and survives the reloads TC-34 does.
+   */
+  test.beforeEach(async ({ passcodeDialog }) => {
+    await passcodeDialog.armGate();
+  });
+
   test('TC-32: opening the route shows the passcode dialog before data renders', async ({
     dailySaleReportPage,
     passcodeDialog,

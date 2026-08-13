@@ -12,7 +12,7 @@ import { Tag } from '@/types/testTags';
  * real UI strings (nav + sidebar + a settings screen) are translated, and they
  * document the known "language is not persisted across reload" defect.
  */
-test.describe(`Settings — Language switch ${Tag.REGRESSION}`, () => {
+test.describe(`Settings — Language switch ${Tag.REGRESSION} ${Tag.EXCLUSIVE}`, () => {
   test.beforeEach(async ({ languageSettingsPage }) => {
     await languageSettingsPage.goto();
     await languageSettingsPage.waitForReady();

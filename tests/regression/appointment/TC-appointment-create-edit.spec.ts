@@ -25,7 +25,7 @@ import { writeDashboard } from '@domains/reporting/dashboard';
  * "Tổng hợp câu hỏi cần confirm" section of VP-1615-analysis.md before
  * flipping any of these to a real assertion.
  */
-test.describe(`Appointment — create/edit/confirm/cancel scan ${Tag.REGRESSION} ${Tag.UI}`, () => {
+test.describe(`Appointment — create/edit/confirm/cancel scan ${Tag.REGRESSION} ${Tag.UI} ${Tag.SLOW}`, () => {
   test('TC-APPT-ALL: Appointment form — full check', async ({ appointmentPage, page }) => {
     test.setTimeout(180_000);
 
